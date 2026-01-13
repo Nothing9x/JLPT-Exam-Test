@@ -1,6 +1,8 @@
 # VegaX JLPT API Documentation
 
-**Base URL**: `http://localhost:8080/api`
+**Base URL**: `https://8e23deb9e9e2.ngrok-free.app/api`
+
+> **Note**: Đây là URL tạm thời từ ngrok. URL localhost: `http://localhost:8080/api`
 
 ---
 
@@ -1103,13 +1105,13 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 Audio and image files can be accessed via:
 
 ```
-http://localhost:8080/data/audio/{folder}/{filename}.mp3
-http://localhost:8080/data/images/{folder}/{filename}.png
+https://8e23deb9e9e2.ngrok-free.app/data/audio/{folder}/{filename}.mp3
+https://8e23deb9e9e2.ngrok-free.app/data/images/{folder}/{filename}.png
 ```
 
 Example:
 ```
-http://localhost:8080/data/audio/26/23526_092020_audio_N3_NHCD_q94.mp3
+https://8e23deb9e9e2.ngrok-free.app/data/audio/26/23526_092020_audio_N3_NHCD_q94.mp3
 ```
 
 The file paths are included in the API responses (e.g., in exam questions).

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../auth/presentation/screens/login_screen.dart';
 import '../../../jlpt_level/presentation/screens/jlpt_level_screen.dart';
 
 class WelcomeScreen extends StatelessWidget {
@@ -285,10 +286,11 @@ class WelcomeScreen extends StatelessWidget {
           // Already have account button
           TextButton(
             onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Login tapped!'),
-                  behavior: SnackBarBehavior.floating,
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => LoginScreen(
+                    languageCode: languageCode,
+                  ),
                 ),
               );
             },

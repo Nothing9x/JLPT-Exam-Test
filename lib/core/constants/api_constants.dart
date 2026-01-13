@@ -1,5 +1,5 @@
 class ApiConstants {
-  static const String baseUrl = 'http://localhost:8080/api';
+  static const String baseUrl = 'https://8e23deb9e9e2.ngrok-free.app/api';
 
   // Auth endpoints
   static const String register = '/auth/register';

@@ -35,6 +35,18 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
 
+  # HTTP client for API calls
+  http: ^1.2.0
+
+  # Google Sign In
+  google_sign_in: ^6.2.1
+
+  # Apple Sign In
+  sign_in_with_apple: ^6.1.0
+
+  # Crypto for Apple Sign In
+  crypto: ^3.0.3
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
