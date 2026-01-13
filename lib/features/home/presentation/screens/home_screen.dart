@@ -31,6 +31,9 @@ class _HomeScreenState extends State<HomeScreen> {
       PracticeTab(
         languageCode: widget.languageCode,
         token: widget.token,
+        onMockExamsPressed: () {
+          setState(() => _currentIndex = 1);
+        },
       ),
       ExamsTab(
         languageCode: widget.languageCode,

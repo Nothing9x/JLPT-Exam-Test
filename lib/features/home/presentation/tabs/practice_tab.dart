@@ -5,11 +5,13 @@ import '../../data/services/history_service.dart';
 class PracticeTab extends StatefulWidget {
   final String languageCode;
   final String? token;
+  final VoidCallback? onMockExamsPressed;
 
   const PracticeTab({
     super.key,
     required this.languageCode,
     this.token,
+    this.onMockExamsPressed,
   });
 
   @override
@@ -279,6 +281,7 @@ class _PracticeTabState extends State<PracticeTab> {
                         title: 'Mock Exams',
                         subtitle: 'Full Tests',
                         isDark: isDark,
+                        onTap: widget.onMockExamsPressed,
                       ),
                       _buildExamPrepCard(
                         context,
@@ -541,11 +544,10 @@ class _PracticeTabState extends State<PracticeTab> {
     required String title,
     required String subtitle,
     required bool isDark,
+    VoidCallback? onTap,
   }) {
     return GestureDetector(
-      onTap: () {
-        // TODO: Navigate to exam prep
-      },
+      onTap: onTap ?? () {},
       child: Container(
         width: 160,
         margin: const EdgeInsets.only(right: 12),
