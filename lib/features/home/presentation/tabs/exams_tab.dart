@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import 'test_detail_screen.dart';
 
 class ExamsTab extends StatefulWidget {
   final String languageCode;
   final String? token;
+  final VoidCallback? onNavigateToUpgrade;
 
   const ExamsTab({
     super.key,
     required this.languageCode,
     this.token,
+    this.onNavigateToUpgrade,
   });
 
   @override
@@ -217,7 +220,17 @@ class _ExamsTabState extends State<ExamsTab> {
   }) {
     return GestureDetector(
       onTap: () {
-        // TODO: Navigate to exam detail/start exam
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => TestDetailScreen(
+              level: level,
+              languageCode: widget.languageCode,
+              token: widget.token,
+              onNavigateToUpgrade: widget.onNavigateToUpgrade,
+            ),
+          ),
+        );
       },
       child: Container(
         padding: const EdgeInsets.all(16),

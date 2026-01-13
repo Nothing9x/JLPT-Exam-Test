@@ -38,6 +38,9 @@ class _HomeScreenState extends State<HomeScreen> {
       ExamsTab(
         languageCode: widget.languageCode,
         token: widget.token,
+        onNavigateToUpgrade: () {
+          setState(() => _currentIndex = 2);
+        },
       ),
       const UpgradeTab(),
       SettingsTab(
