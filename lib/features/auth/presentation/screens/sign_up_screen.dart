@@ -4,7 +4,9 @@ import 'package:flutter/services.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/services/token_storage.dart';
 import '../../data/services/auth_service.dart';
+import '../../../home/presentation/screens/home_screen.dart';
 
 class SignUpScreen extends StatefulWidget {
   final String languageCode;
@@ -515,7 +517,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 ),
                 const SizedBox(width: 12),
                 Text(
-                  _getLocalizedString('sign_in_google'),
+                  _getLocalizedString('sign_up_google'),
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
@@ -551,7 +553,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 ),
                 const SizedBox(width: 12),
                 Text(
-                  _getLocalizedString('sign_in_apple'),
+                  _getLocalizedString('sign_up_apple'),
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
@@ -617,9 +619,29 @@ class _SignUpScreenState extends State<SignUpScreen> {
             backgroundColor: AppColors.tealAccent,
           ),
         );
-        // TODO: Navigate to home screen or save token
         debugPrint('Registered user: ${response.user.email}');
         debugPrint('Token: ${response.token}');
+        
+        // Save token and language for persistent login
+        await TokenStorage.saveToken(response.token);
+        await TokenStorage.saveLanguage(widget.languageCode);
+        await TokenStorage.saveEmail(response.user.email);
+        await TokenStorage.saveFullName(response.user.fullName);
+        
+        // Navigate to home screen
+        Future.delayed(const Duration(seconds: 1), () {
+          if (mounted) {
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(
+                builder: (context) => HomeScreen(
+                  languageCode: widget.languageCode,
+                  token: response.token,
+                ),
+              ),
+              (route) => false,
+            );
+          }
+        });
       }
     } on AuthException catch (e) {
       if (mounted) {
@@ -664,15 +686,38 @@ class _SignUpScreenState extends State<SignUpScreen> {
             backgroundColor: AppColors.tealAccent,
           ),
         );
-        // TODO: Navigate to home screen or save token
         debugPrint('Google user: ${response.user.email}');
         debugPrint('Token: ${response.token}');
+        
+        // Save token and language for persistent login
+        await TokenStorage.saveToken(response.token);
+        await TokenStorage.saveLanguage(widget.languageCode);
+        await TokenStorage.saveEmail(response.user.email);
+        await TokenStorage.saveFullName(response.user.fullName);
+        
+        // Navigate to home screen
+        Future.delayed(const Duration(seconds: 1), () {
+          if (mounted) {
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(
+                builder: (context) => HomeScreen(
+                  languageCode: widget.languageCode,
+                  token: response.token,
+                ),
+              ),
+              (route) => false,
+            );
+          }
+        });
       }
     } on AuthException catch (e) {
+      debugPrint('Google Sign Up AuthException: ${e.message}');
       if (mounted) {
         _showError(e.message);
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('Google Sign Up Error: $e');
+      debugPrint('Stack trace: $stackTrace');
       if (mounted) {
         _showError(_getLocalizedString('error_google_sign_in'));
       }
@@ -729,9 +774,29 @@ class _SignUpScreenState extends State<SignUpScreen> {
             backgroundColor: AppColors.tealAccent,
           ),
         );
-        // TODO: Navigate to home screen or save token
         debugPrint('Apple user: ${response.user.email}');
         debugPrint('Token: ${response.token}');
+        
+        // Save token and language for persistent login
+        await TokenStorage.saveToken(response.token);
+        await TokenStorage.saveLanguage(widget.languageCode);
+        await TokenStorage.saveEmail(response.user.email);
+        await TokenStorage.saveFullName(response.user.fullName);
+        
+        // Navigate to home screen
+        Future.delayed(const Duration(seconds: 1), () {
+          if (mounted) {
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(
+                builder: (context) => HomeScreen(
+                  languageCode: widget.languageCode,
+                  token: response.token,
+                ),
+              ),
+              (route) => false,
+            );
+          }
+        });
       }
     } on SignInWithAppleAuthorizationException catch (e) {
       if (e.code == AuthorizationErrorCode.canceled) {
@@ -783,8 +848,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
       'terms_agree_suffix': 'に同意します',
       'required_field_note': '* は必須項目です',
       'or': 'または',
-      'sign_in_google': 'Googleでログイン',
-      'sign_in_apple': 'Appleでログイン',
+      'sign_up_google': 'Googleで登録',
+      'sign_up_apple': 'Appleで登録',
       'error_terms': '利用規約に同意してください',
       'error_name_required': '氏名を入力してください',
       'error_email_required': 'メールアドレスを入力してください',
@@ -810,8 +875,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
       'terms_agree_suffix': '',
       'required_field_note': '* Required fields',
       'or': 'or',
-      'sign_in_google': 'Sign in with Google',
-      'sign_in_apple': 'Sign in with Apple',
+      'sign_up_google': 'Sign up with Google',
+      'sign_up_apple': 'Sign up with Apple',
       'error_terms': 'Please agree to the terms',
       'error_name_required': 'Please enter your name',
       'error_email_required': 'Please enter your email',
@@ -837,8 +902,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
       'terms_agree_suffix': ' của chúng tôi',
       'required_field_note': 'Dấu * là trường bắt buộc điền thông tin',
       'or': 'hoặc',
-      'sign_in_google': 'Đăng nhập với Google',
-      'sign_in_apple': 'Đăng nhập với Apple',
+      'sign_up_google': 'Đăng ký với Google',
+      'sign_up_apple': 'Đăng ký với Apple',
       'error_terms': 'Vui lòng đồng ý với điều khoản',
       'error_name_required': 'Vui lòng nhập họ tên',
       'error_email_required': 'Vui lòng nhập email',
@@ -864,8 +929,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
       'terms_agree_suffix': '',
       'required_field_note': '* Campos obligatorios',
       'or': 'o',
-      'sign_in_google': 'Iniciar sesión con Google',
-      'sign_in_apple': 'Iniciar sesión con Apple',
+      'sign_up_google': 'Registrarse con Google',
+      'sign_up_apple': 'Registrarse con Apple',
       'error_terms': 'Por favor acepta los términos',
       'error_name_required': 'Por favor ingresa tu nombre',
       'error_email_required': 'Por favor ingresa tu email',
@@ -891,8 +956,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
       'terms_agree_suffix': '',
       'required_field_note': '* Champs obligatoires',
       'or': 'ou',
-      'sign_in_google': 'Se connecter avec Google',
-      'sign_in_apple': 'Se connecter avec Apple',
+      'sign_up_google': "S'inscrire avec Google",
+      'sign_up_apple': "S'inscrire avec Apple",
       'error_terms': 'Veuillez accepter les conditions',
       'error_name_required': 'Veuillez entrer votre nom',
       'error_email_required': 'Veuillez entrer votre email',
@@ -918,8 +983,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
       'terms_agree_suffix': '',
       'required_field_note': '* 为必填项',
       'or': '或',
-      'sign_in_google': '使用Google登录',
-      'sign_in_apple': '使用Apple登录',
+      'sign_up_google': '使用Google注册',
+      'sign_up_apple': '使用Apple注册',
       'error_terms': '请同意条款',
       'error_name_required': '请输入姓名',
       'error_email_required': '请输入邮箱',
@@ -945,8 +1010,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
       'terms_agree_suffix': '',
       'required_field_note': '* 為必填項',
       'or': '或',
-      'sign_in_google': '使用Google登入',
-      'sign_in_apple': '使用Apple登入',
+      'sign_up_google': '使用Google註冊',
+      'sign_up_apple': '使用Apple註冊',
       'error_terms': '請同意條款',
       'error_name_required': '請輸入姓名',
       'error_email_required': '請輸入電子郵件',
@@ -972,8 +1037,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
       'terms_agree_suffix': '',
       'required_field_note': '* Обязательные поля',
       'or': 'или',
-      'sign_in_google': 'Войти через Google',
-      'sign_in_apple': 'Войти через Apple',
+      'sign_up_google': 'Зарегистрироваться через Google',
+      'sign_up_apple': 'Зарегистрироваться через Apple',
       'error_terms': 'Пожалуйста, примите условия',
       'error_name_required': 'Пожалуйста, введите имя',
       'error_email_required': 'Пожалуйста, введите email',
@@ -999,8 +1064,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
       'terms_agree_suffix': ' kami',
       'required_field_note': '* Kolom wajib diisi',
       'or': 'atau',
-      'sign_in_google': 'Masuk dengan Google',
-      'sign_in_apple': 'Masuk dengan Apple',
+      'sign_up_google': 'Daftar dengan Google',
+      'sign_up_apple': 'Daftar dengan Apple',
       'error_terms': 'Silakan setujui ketentuan',
       'error_name_required': 'Silakan masukkan nama',
       'error_email_required': 'Silakan masukkan email',
@@ -1026,8 +1091,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
       'terms_agree_suffix': '에 동의하게 됩니다',
       'required_field_note': '* 필수 입력 항목',
       'or': '또는',
-      'sign_in_google': 'Google로 로그인',
-      'sign_in_apple': 'Apple로 로그인',
+      'sign_up_google': 'Google로 회원가입',
+      'sign_up_apple': 'Apple로 회원가입',
       'error_terms': '약관에 동의해 주세요',
       'error_name_required': '이름을 입력해 주세요',
       'error_email_required': '이메일을 입력해 주세요',
@@ -1053,8 +1118,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
       'terms_agree_suffix': ' kami',
       'required_field_note': '* Medan wajib',
       'or': 'atau',
-      'sign_in_google': 'Log masuk dengan Google',
-      'sign_in_apple': 'Log masuk dengan Apple',
+      'sign_up_google': 'Daftar dengan Google',
+      'sign_up_apple': 'Daftar dengan Apple',
       'error_terms': 'Sila bersetuju dengan terma',
       'error_name_required': 'Sila masukkan nama',
       'error_email_required': 'Sila masukkan e-mel',
@@ -1080,8 +1145,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
       'terms_agree_suffix': '',
       'required_field_note': '* Campos obrigatórios',
       'or': 'ou',
-      'sign_in_google': 'Entrar com Google',
-      'sign_in_apple': 'Entrar com Apple',
+      'sign_up_google': 'Cadastrar com Google',
+      'sign_up_apple': 'Cadastrar com Apple',
       'error_terms': 'Por favor, aceite os termos',
       'error_name_required': 'Por favor, insira seu nome',
       'error_email_required': 'Por favor, insira seu email',
@@ -1107,8 +1172,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
       'terms_agree_suffix': '',
       'required_field_note': '* 为必填项',
       'or': '或',
-      'sign_in_google': '使用Google登录',
-      'sign_in_apple': '使用Apple登录',
+      'sign_up_google': '使用Google注册',
+      'sign_up_apple': '使用Apple注册',
       'error_terms': '请同意条款',
       'error_name_required': '请输入姓名',
       'error_email_required': '请输入邮箱',

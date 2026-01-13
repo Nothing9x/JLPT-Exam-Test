@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../../../../core/constants/api_constants.dart';
 import '../models/user_model.dart';
@@ -67,8 +68,11 @@ class AuthService {
     String language = 'vi',
     int? level,
   }) async {
+    final uri = Uri.parse('${ApiConstants.baseUrl}${ApiConstants.oauth}');
+    debugPrint('OAuth Login Request: $uri');
+
     final response = await _client.post(
-      Uri.parse('${ApiConstants.baseUrl}${ApiConstants.oauth}'),
+      uri,
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'email': email,
@@ -81,11 +85,21 @@ class AuthService {
       }),
     );
 
+    debugPrint('OAuth Login Response: ${response.statusCode}');
+    if (response.statusCode != 200) {
+      debugPrint('OAuth Login Body: ${response.body}');
+    }
+
     if (response.statusCode == 200) {
       return AuthResponse.fromJson(jsonDecode(response.body));
     } else {
-      final error = jsonDecode(response.body);
-      throw AuthException(error['error'] ?? 'OAuth login failed');
+      try {
+        final error = jsonDecode(response.body);
+        throw AuthException(error['error'] ?? 'OAuth login failed');
+      } catch (e) {
+        if (e is AuthException) rethrow;
+        throw AuthException('OAuth login failed: ${response.statusCode}\n${response.body}');
+      }
     }
   }
 

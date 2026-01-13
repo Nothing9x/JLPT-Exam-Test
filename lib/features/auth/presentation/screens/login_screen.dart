@@ -4,8 +4,10 @@ import 'package:flutter/services.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/services/token_storage.dart';
 import '../../data/services/auth_service.dart';
 import 'sign_up_screen.dart';
+import '../../../home/presentation/screens/home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   final String languageCode;
@@ -634,9 +636,29 @@ class _LoginScreenState extends State<LoginScreen> {
             backgroundColor: AppColors.tealAccent,
           ),
         );
-        // TODO: Navigate to home screen or save token
         debugPrint('Logged in user: ${response.user.email}');
         debugPrint('Token: ${response.token}');
+        
+        // Save token and language for persistent login
+        await TokenStorage.saveToken(response.token);
+        await TokenStorage.saveLanguage(widget.languageCode);
+        await TokenStorage.saveEmail(response.user.email);
+        await TokenStorage.saveFullName(response.user.fullName);
+        
+        // Navigate to home screen
+        Future.delayed(const Duration(seconds: 1), () {
+          if (mounted) {
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(
+                builder: (context) => HomeScreen(
+                  languageCode: widget.languageCode,
+                  token: response.token,
+                ),
+              ),
+              (route) => false,
+            );
+          }
+        });
       }
     } on AuthException catch (e) {
       if (mounted) {
@@ -683,6 +705,27 @@ class _LoginScreenState extends State<LoginScreen> {
         );
         debugPrint('Google user: ${response.user.email}');
         debugPrint('Token: ${response.token}');
+        
+        // Save token and language for persistent login
+        await TokenStorage.saveToken(response.token);
+        await TokenStorage.saveLanguage(widget.languageCode);
+        await TokenStorage.saveEmail(response.user.email);
+        await TokenStorage.saveFullName(response.user.fullName);
+        
+        // Navigate to home screen
+        Future.delayed(const Duration(seconds: 1), () {
+          if (mounted) {
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(
+                builder: (context) => HomeScreen(
+                  languageCode: widget.languageCode,
+                  token: response.token,
+                ),
+              ),
+              (route) => false,
+            );
+          }
+        });
       }
     } on AuthException catch (e) {
       if (mounted) {
@@ -746,6 +789,27 @@ class _LoginScreenState extends State<LoginScreen> {
         );
         debugPrint('Apple user: ${response.user.email}');
         debugPrint('Token: ${response.token}');
+        
+        // Save token and language for persistent login
+        await TokenStorage.saveToken(response.token);
+        await TokenStorage.saveLanguage(widget.languageCode);
+        await TokenStorage.saveEmail(response.user.email);
+        await TokenStorage.saveFullName(response.user.fullName);
+        
+        // Navigate to home screen
+        Future.delayed(const Duration(seconds: 1), () {
+          if (mounted) {
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(
+                builder: (context) => HomeScreen(
+                  languageCode: widget.languageCode,
+                  token: response.token,
+                ),
+              ),
+              (route) => false,
+            );
+          }
+        });
       }
     } on SignInWithAppleAuthorizationException catch (e) {
       if (e.code == AuthorizationErrorCode.canceled) {
