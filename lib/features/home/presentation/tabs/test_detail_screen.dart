@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../data/services/exam_service.dart';
+import '../screens/exam_start_screen.dart';
 
 class TestDetailScreen extends StatefulWidget {
   final String level;
@@ -458,7 +459,18 @@ class _TestDetailScreenState extends State<TestDetailScreen> {
                       )
                     : ElevatedButton.icon(
                         onPressed: () {
-                          // TODO: Start exam
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ExamStartScreen(
+                                exam: exam,
+                                level: widget.level,
+                                testNumber: testNumber,
+                                token: widget.token,
+                                userName: userProfile?.fullName,
+                              ),
+                            ),
+                          );
                         },
                         icon: const Icon(Icons.play_arrow, size: 18),
                         label: const Text('Start Exam'),

@@ -10,6 +10,7 @@ class ExamModel {
   final int time;
   final int totalScore;
   final int passScore;
+  final int questionCount;
 
   ExamModel({
     required this.id,
@@ -18,6 +19,7 @@ class ExamModel {
     required this.time,
     required this.totalScore,
     required this.passScore,
+    required this.questionCount,
   });
 
   factory ExamModel.fromJson(Map<String, dynamic> json) {
@@ -28,6 +30,7 @@ class ExamModel {
       time: json['time'] ?? 0,
       totalScore: json['totalScore'] ?? 180,
       passScore: json['passScore'] ?? 100,
+      questionCount: json['questionCount'] ?? 45,
     );
   }
 }
