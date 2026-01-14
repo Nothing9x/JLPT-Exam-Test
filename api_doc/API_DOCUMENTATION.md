@@ -1097,6 +1097,345 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 - POST `/bookmarks/grammar`
 - GET `/bookmarks/grammar`
 - DELETE `/bookmarks/grammar/{bookmark_id}`
+- GET `/mytest/config`
+- GET `/mytest/questions`
+- POST `/mytest/generate`
+- GET `/mytest/questions/{id}/answer`
+
+---
+
+## 7. My Test APIs
+
+Tính năng tự tạo đề thi theo dạng câu hỏi (Vocabulary, Grammar, Reading, Listening).
+
+### 7.1 Get My Test Config
+**GET** `/mytest/config?level={level}`
+
+Lấy cấu hình các loại câu hỏi có sẵn cho một level JLPT cụ thể.
+
+**Headers**:
+```
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+**Query Parameters**:
+- `level` (required): JLPT level (1-5 for N1-N5)
+
+**Example Request**:
+```
+GET /mytest/config?level=3
+```
+
+**Response** `200 OK`:
+```json
+{
+  "level": 3,
+  "categories": [
+    {
+      "category": "VOCABULARY",
+      "types": [
+        {
+          "id": 1,
+          "key": "Cách đọc kanji",
+          "name": "Cách đọc kanji",
+          "level": 0,
+          "numberQues": 150
+        },
+        {
+          "id": 5,
+          "key": "Cách viết từ",
+          "name": "Cách đọc Hiragana",
+          "level": 0,
+          "numberQues": 120
+        },
+        {
+          "id": 2,
+          "key": "Thay đổi cách nói",
+          "name": "Đồng nghĩa",
+          "level": 2,
+          "numberQues": 80
+        }
+      ]
+    },
+    {
+      "category": "GRAMMAR",
+      "types": [
+        {
+          "id": 7,
+          "key": "Lựa chọn ngữ pháp",
+          "name": "Dạng ngữ pháp",
+          "level": 0,
+          "numberQues": 200
+        },
+        {
+          "id": 8,
+          "key": "Lắp ghép câu",
+          "name": "Thành lập câu",
+          "level": 0,
+          "numberQues": 100
+        }
+      ]
+    },
+    {
+      "category": "READING",
+      "types": [
+        {
+          "id": 10,
+          "key": "Đoạn văn ngắn",
+          "name": "Đoạn văn ngắn",
+          "level": 0,
+          "numberQues": 60
+        }
+      ]
+    },
+    {
+      "category": "LISTENING",
+      "types": [
+        {
+          "id": 16,
+          "key": "Nghe hiểu chủ đề",
+          "name": "Nghe hiểu chủ đề",
+          "level": 0,
+          "numberQues": 80
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Type Level Meaning**:
+- `0`: Dễ
+- `1`: Trung bình
+- `2`: Khó
+- `3`: Rất khó
+
+---
+
+### 7.2 Get My Test Questions
+**GET** `/mytest/questions?level={level}&category={category}&typeId={typeId}&limit={limit}`
+
+Lấy các câu hỏi ngẫu nhiên theo category và type.
+
+**Headers**:
+```
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+**Query Parameters**:
+- `level` (required): JLPT level (1-5 for N1-N5)
+- `category` (required): Category - VOCABULARY, GRAMMAR, READING, LISTENING
+- `typeId` (optional): Type ID để lọc theo loại câu hỏi cụ thể
+- `limit` (optional): Số câu hỏi (default: 20, max: 50)
+
+**Example Request**:
+```
+GET /mytest/questions?level=3&category=VOCABULARY&typeId=1&limit=10
+```
+
+**Response** `200 OK`:
+```json
+[
+  {
+    "id": 12345,
+    "question": "彼女は<u>色盲</u>になった。",
+    "answers": ["しきかん", "いろがた", "しきもう", "いろかた"],
+    "audio": null,
+    "image": null,
+    "txtRead": null,
+    "groupTitle": "問題＿＿＿の読み方として最もよいものを...",
+    "category": "VOCABULARY",
+    "typeId": 1,
+    "typeName": "Cách đọc kanji",
+    "level": 3
+  },
+  {
+    "id": 12346,
+    "question": "この問題は<u>難解</u>です。",
+    "answers": ["なんかい", "なんげ", "なんけ", "なんげい"],
+    "audio": null,
+    "image": null,
+    "txtRead": null,
+    "groupTitle": "問題＿＿＿の読み方として最もよいものを...",
+    "category": "VOCABULARY",
+    "typeId": 1,
+    "typeName": "Cách đọc kanji",
+    "level": 3
+  }
+]
+```
+
+**Note**:
+- Correct answer is NOT included (use `/mytest/questions/{id}/answer` to check)
+- Questions are randomly selected
+- For LISTENING category, `audio` field contains the file path
+
+---
+
+### 7.3 Generate Custom Test
+**POST** `/mytest/generate`
+
+Tạo một đề thi tùy chỉnh với các loại câu hỏi và số lượng cụ thể.
+
+**Headers**:
+```
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+**Request Body**:
+```json
+{
+  "level": 3,
+  "categories": [
+    {
+      "category": "VOCABULARY",
+      "types": [
+        { "typeId": 1, "count": 10 },
+        { "typeId": 2, "count": 5 }
+      ]
+    },
+    {
+      "category": "GRAMMAR",
+      "types": [
+        { "typeId": 7, "count": 10 },
+        { "typeId": 8, "count": 5 }
+      ]
+    },
+    {
+      "category": "LISTENING",
+      "types": [
+        { "typeId": 16, "count": 5 }
+      ]
+    }
+  ]
+}
+```
+
+**Response** `200 OK`:
+```json
+{
+  "totalQuestions": 35,
+  "categories": {
+    "VOCABULARY": [
+      {
+        "id": 12345,
+        "question": "彼女は<u>色盲</u>になった。",
+        "answers": ["しきかん", "いろがた", "しきもう", "いろかた"],
+        "audio": null,
+        "image": null,
+        "txtRead": null,
+        "groupTitle": "...",
+        "category": "VOCABULARY",
+        "typeId": 1,
+        "typeName": "Cách đọc kanji",
+        "level": 3
+      }
+    ],
+    "GRAMMAR": [
+      {
+        "id": 23456,
+        "question": "...",
+        "answers": ["...", "...", "...", "..."],
+        "audio": null,
+        "image": null,
+        "txtRead": null,
+        "groupTitle": "...",
+        "category": "GRAMMAR",
+        "typeId": 7,
+        "typeName": "Dạng ngữ pháp",
+        "level": 3
+      }
+    ],
+    "LISTENING": [
+      {
+        "id": 34567,
+        "question": "...",
+        "answers": ["...", "...", "...", "..."],
+        "audio": "/data/audio/26/xxx.mp3",
+        "image": null,
+        "txtRead": null,
+        "groupTitle": "...",
+        "category": "LISTENING",
+        "typeId": 16,
+        "typeName": "Nghe hiểu chủ đề",
+        "level": 3
+      }
+    ]
+  }
+}
+```
+
+---
+
+### 7.4 Get Question Answer
+**GET** `/mytest/questions/{id}/answer`
+
+Lấy đáp án và giải thích cho một câu hỏi cụ thể.
+
+**Headers**:
+```
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+**Path Parameters**:
+- `id`: Question ID
+
+**Example Request**:
+```
+GET /mytest/questions/12345/answer
+```
+
+**Response** `200 OK`:
+```json
+{
+  "id": 12345,
+  "question": "彼女は<u>色盲</u>になった。",
+  "answers": ["しきかん", "いろがた", "しきもう", "いろかた"],
+  "correctAnswer": 2,
+  "audio": null,
+  "image": null,
+  "txtRead": null,
+  "groupTitle": "問題＿＿＿の読み方として最もよいものを...",
+  "explain": "色盲（しきもう）は色を識別できない状態...",
+  "explainEn": "Color blindness is a condition...",
+  "explainVn": "Mù màu là tình trạng không thể phân biệt màu sắc...",
+  "explainCn": "色盲是一种无法识别颜色的状况...",
+  "category": "VOCABULARY",
+  "typeId": 1,
+  "typeName": "Cách đọc kanji",
+  "level": 3
+}
+```
+
+**Note**: `correctAnswer` là index của đáp án đúng (0-3 tương ứng với answer 1-4)
+
+---
+
+### 7.5 Question Type Reference
+
+| Type ID | Category | Key | Name |
+|---------|----------|-----|------|
+| 1 | VOCABULARY | Cách đọc kanji | Cách đọc kanji |
+| 2 | VOCABULARY | Thay đổi cách nói | Đồng nghĩa |
+| 3 | VOCABULARY | Điền từ theo văn cảnh | Biểu hiện từ |
+| 4 | VOCABULARY | Ứng dụng từ | Cách dùng từ |
+| 5 | VOCABULARY | Cách viết từ | Cách đọc Hiragana |
+| 6 | VOCABULARY | Hình thành từ | Cấu tạo từ |
+| 7 | GRAMMAR | Lựa chọn ngữ pháp | Dạng ngữ pháp |
+| 8 | GRAMMAR | Lắp ghép câu | Thành lập câu |
+| 9 | GRAMMAR | Ngữ pháp theo đoạn văn | Ngữ pháp theo đoạn văn |
+| 10 | READING | Đoạn văn ngắn | Đoạn văn ngắn |
+| 11 | READING | Đoạn văn vừa | Đoạn văn trung bình |
+| 12 | READING | Đoạn văn dài | Đoạn văn dài |
+| 13 | READING | Đọc hiểu tổng hợp | Đọc hiểu tổng hợp |
+| 14 | READING | Đọc hiểu chủ đề | Đọc hiểu chủ đề |
+| 15 | READING | Tìm thông tin | Tìm thông tin |
+| 16 | LISTENING | Nghe hiểu chủ đề | Nghe hiểu chủ đề |
+| 17 | LISTENING | Nghe hiểu điểm chính | Nghe hiểu điểm chính |
+| 18 | LISTENING | Nghe hiểu khái quát | Nghe hiểu khái quát |
+| 19 | LISTENING | Trả lời nhanh | Trả lời nhanh |
+| 20 | LISTENING | Nghe hiểu tổng hợp | Nghe hiểu tổng hợp |
+| 21 | LISTENING | Nghe hiểu diễn đạt | Nghe hiểu diễn đạt |
 
 ---
 

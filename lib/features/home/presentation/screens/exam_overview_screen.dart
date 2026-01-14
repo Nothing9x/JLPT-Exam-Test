@@ -34,7 +34,7 @@ class _ExamOverviewScreenState extends State<ExamOverviewScreen> {
   List<FlatQuestion> get _filteredQuestions {
     // First filter by part
     List<FlatQuestion> filtered = widget.questions;
-    
+
     if (_partNames.isNotEmpty && _selectedPartIndex < _partNames.length) {
       final selectedPart = _partNames[_selectedPartIndex];
       filtered = filtered.where((q) => q.partName == selectedPart).toList();
@@ -43,10 +43,14 @@ class _ExamOverviewScreenState extends State<ExamOverviewScreen> {
     // Then filter by answered/unanswered
     if (_selectedFilterIndex == 1) {
       // Answered only
-      filtered = filtered.where((q) => widget.answers.containsKey(q.question.id)).toList();
+      filtered = filtered
+          .where((q) => widget.answers.containsKey(q.question.id))
+          .toList();
     } else if (_selectedFilterIndex == 2) {
       // Unanswered only
-      filtered = filtered.where((q) => !widget.answers.containsKey(q.question.id)).toList();
+      filtered = filtered
+          .where((q) => !widget.answers.containsKey(q.question.id))
+          .toList();
     }
 
     return filtered;
@@ -57,7 +61,9 @@ class _ExamOverviewScreenState extends State<ExamOverviewScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+      backgroundColor: isDark
+          ? AppColors.backgroundDark
+          : AppColors.backgroundLight,
       body: Column(
         children: [
           // Safe area
@@ -74,9 +80,7 @@ class _ExamOverviewScreenState extends State<ExamOverviewScreen> {
           // Filter Chips
           _buildFilterChips(isDark),
           // Question List
-          Expanded(
-            child: _buildQuestionList(isDark),
-          ),
+          Expanded(child: _buildQuestionList(isDark)),
         ],
       ),
     );
@@ -91,11 +95,7 @@ class _ExamOverviewScreenState extends State<ExamOverviewScreen> {
             onTap: () => Navigator.pop(context),
             child: Row(
               children: [
-                Icon(
-                  Icons.chevron_left,
-                  color: AppColors.tealAccent,
-                  size: 24,
-                ),
+                Icon(Icons.chevron_left, color: AppColors.tealAccent, size: 24),
                 const SizedBox(width: 4),
                 Text(
                   'Back to Test',
@@ -122,12 +122,12 @@ class _ExamOverviewScreenState extends State<ExamOverviewScreen> {
         child: Row(
           children: List.generate(_partNames.length, (index) {
             final isSelected = _selectedPartIndex == index;
-            // Shorten part names for display
-            String displayName = _partNames[index];
-            if (displayName.contains('・')) {
-              // Japanese name like "文字・語彙" -> "Vocabulary"
-              displayName = _getEnglishPartName(displayName);
-            }
+            // Use QuestionTypeMapper for consistent category names
+            final partName = _partNames[index];
+            final category = QuestionTypeMapper.getCategory(partName);
+            final displayName = QuestionTypeMapper.getCategoryDisplayName(
+              category,
+            );
 
             return Padding(
               padding: const EdgeInsets.only(right: 24),
@@ -143,8 +143,8 @@ class _ExamOverviewScreenState extends State<ExamOverviewScreen> {
                         color: isSelected
                             ? AppColors.tealAccent
                             : (isDark
-                                ? AppColors.textSecondaryDark
-                                : AppColors.textSecondaryLight),
+                                  ? AppColors.textSecondaryDark
+                                  : AppColors.textSecondaryLight),
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -167,20 +167,6 @@ class _ExamOverviewScreenState extends State<ExamOverviewScreen> {
     );
   }
 
-  String _getEnglishPartName(String japaneseName) {
-    // Map Japanese part names to English
-    if (japaneseName.contains('文字') || japaneseName.contains('語彙')) {
-      return 'Vocabulary';
-    } else if (japaneseName.contains('文法')) {
-      return 'Grammar';
-    } else if (japaneseName.contains('読解')) {
-      return 'Reading';
-    } else if (japaneseName.contains('聴解')) {
-      return 'Listening';
-    }
-    return japaneseName;
-  }
-
   Widget _buildFilterChips(bool isDark) {
     final filters = ['All', 'Answered', 'Unanswered'];
 
@@ -195,7 +181,10 @@ class _ExamOverviewScreenState extends State<ExamOverviewScreen> {
             child: GestureDetector(
               onTap: () => setState(() => _selectedFilterIndex = index),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
                   color: isSelected
                       ? AppColors.tealAccent
@@ -204,7 +193,9 @@ class _ExamOverviewScreenState extends State<ExamOverviewScreen> {
                   border: Border.all(
                     color: isSelected
                         ? AppColors.tealAccent
-                        : (isDark ? AppColors.borderDark : AppColors.borderLight),
+                        : (isDark
+                              ? AppColors.borderDark
+                              : AppColors.borderLight),
                   ),
                 ),
                 child: Text(
@@ -215,8 +206,8 @@ class _ExamOverviewScreenState extends State<ExamOverviewScreen> {
                     color: isSelected
                         ? Colors.white
                         : (isDark
-                            ? AppColors.textSecondaryDark
-                            : AppColors.textSecondaryLight),
+                              ? AppColors.textSecondaryDark
+                              : AppColors.textSecondaryLight),
                   ),
                 ),
               ),
@@ -322,8 +313,8 @@ class _ExamOverviewScreenState extends State<ExamOverviewScreen> {
                       color: isAnswered
                           ? AppColors.tealAccent
                           : (isDark
-                              ? AppColors.textSecondaryDark
-                              : AppColors.textSecondaryLight),
+                                ? AppColors.textSecondaryDark
+                                : AppColors.textSecondaryLight),
                     ),
                   ),
                 ],
@@ -348,15 +339,15 @@ class _ExamOverviewScreenState extends State<ExamOverviewScreen> {
                         color: isSelected
                             ? AppColors.tealAccent
                             : (isDark
-                                ? AppColors.cardBackgroundDark
-                                : Colors.grey[50]),
+                                  ? AppColors.cardBackgroundDark
+                                  : Colors.grey[50]),
                         shape: BoxShape.circle,
                         border: Border.all(
                           color: isSelected
                               ? AppColors.tealAccent
                               : (isDark
-                                  ? AppColors.borderDark
-                                  : Colors.grey[300]!),
+                                    ? AppColors.borderDark
+                                    : Colors.grey[300]!),
                           width: isSelected ? 0 : 1,
                         ),
                       ),

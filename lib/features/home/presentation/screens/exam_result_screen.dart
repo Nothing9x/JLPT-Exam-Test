@@ -494,6 +494,10 @@ class ExamResultScreen extends StatelessWidget {
     final maxScore = part.maxScore;
     final progress = maxScore > 0 ? score / maxScore : 0.0;
 
+    // Use QuestionTypeMapper to get category from part name
+    final category = QuestionTypeMapper.getCategory(part.name);
+    final displayName = QuestionTypeMapper.getCategoryDisplayName(category);
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
@@ -501,7 +505,7 @@ class ExamResultScreen extends StatelessWidget {
           Expanded(
             flex: 2,
             child: Text(
-              _getEnglishPartName(part.name),
+              displayName,
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
@@ -559,19 +563,6 @@ class ExamResultScreen extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  String _getEnglishPartName(String japaneseName) {
-    if (japaneseName.contains('文字') || japaneseName.contains('語彙')) {
-      return 'Vocabulary';
-    } else if (japaneseName.contains('文法')) {
-      return 'Grammar';
-    } else if (japaneseName.contains('読解')) {
-      return 'Reading';
-    } else if (japaneseName.contains('聴解')) {
-      return 'Listening';
-    }
-    return japaneseName;
   }
 
   String _getSessionDate() {

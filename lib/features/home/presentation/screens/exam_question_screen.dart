@@ -211,6 +211,73 @@ class ExamDetailModel {
   }
 }
 
+// Question type mapping based on kind/key
+class QuestionTypeMapper {
+  // Keys are lowercase to match API response (e.g., "cách đọc kanji")
+  static const Map<String, String> _kindToCategory = {
+    // VOCABULARY (1-6)
+    'cách đọc kanji': 'VOCABULARY',
+    'thay đổi cách nói': 'VOCABULARY',
+    'điền từ theo văn cảnh': 'VOCABULARY',
+    'ứng dụng từ': 'VOCABULARY',
+    'cách viết từ': 'VOCABULARY',
+    'hình thành từ': 'VOCABULARY',
+    // GRAMMAR (7-9)
+    'lựa chọn ngữ pháp': 'GRAMMAR',
+    'lắp ghép câu': 'GRAMMAR',
+    'ngữ pháp theo đoạn văn': 'GRAMMAR',
+    // READING (10-15)
+    'đoạn văn ngắn': 'READING',
+    'đoạn văn vừa': 'READING',
+    'đoạn văn dài': 'READING',
+    'đọc hiểu tổng hợp': 'READING',
+    'đọc hiểu chủ đề': 'READING',
+    'tìm thông tin': 'READING',
+    // LISTENING (16-21)
+    'nghe hiểu chủ đề': 'LISTENING',
+    'nghe hiểu điểm chính': 'LISTENING',
+    'nghe hiểu khái quát': 'LISTENING',
+    'trả lời nhanh': 'LISTENING',
+    'nghe hiểu tổng hợp': 'LISTENING',
+    'nghe hiểu diễn đạt': 'LISTENING',
+  };
+
+  static String getCategory(String kind) {
+    // Normalize to lowercase for case-insensitive matching
+    final normalizedKind = kind.toLowerCase().trim();
+    return _kindToCategory[normalizedKind] ?? _getCategoryFromPartName(kind);
+  }
+
+  static String _getCategoryFromPartName(String partName) {
+    // Fallback: try to detect from Japanese part names
+    if (partName.contains('文字') || partName.contains('語彙')) {
+      return 'VOCABULARY';
+    } else if (partName.contains('文法')) {
+      return 'GRAMMAR';
+    } else if (partName.contains('読解') || partName.contains('読')) {
+      return 'READING';
+    } else if (partName.contains('聴解') || partName.contains('聴')) {
+      return 'LISTENING';
+    }
+    return 'VOCABULARY'; // Default fallback
+  }
+
+  static String getCategoryDisplayName(String category) {
+    switch (category) {
+      case 'VOCABULARY':
+        return 'Vocabulary';
+      case 'GRAMMAR':
+        return 'Grammar';
+      case 'READING':
+        return 'Reading';
+      case 'LISTENING':
+        return 'Listening';
+      default:
+        return category;
+    }
+  }
+}
+
 class FlatQuestion {
   final QuestionModel question;
   final String groupTitle;
@@ -223,6 +290,13 @@ class FlatQuestion {
     required this.sectionKind,
     required this.partName,
   });
+
+  // Get the category based on sectionKind
+  String get category => QuestionTypeMapper.getCategory(sectionKind);
+
+  // Get display name for the category
+  String get categoryDisplayName =>
+      QuestionTypeMapper.getCategoryDisplayName(category);
 }
 
 class ExamQuestionScreen extends StatefulWidget {
