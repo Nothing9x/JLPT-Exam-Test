@@ -5,8 +5,10 @@ import '../../../../core/constants/api_constants.dart';
 
 class ExamModel {
   final int id;
+  final int? externalId;
   final String title;
   final int level;
+  final int? examType;
   final int time;
   final int totalScore;
   final int passScore;
@@ -14,8 +16,10 @@ class ExamModel {
 
   ExamModel({
     required this.id,
+    this.externalId,
     required this.title,
     required this.level,
+    this.examType,
     required this.time,
     required this.totalScore,
     required this.passScore,
@@ -25,10 +29,12 @@ class ExamModel {
   factory ExamModel.fromJson(Map<String, dynamic> json) {
     return ExamModel(
       id: json['id'] ?? 0,
+      externalId: json['externalId'],
       title: json['title'] ?? 'Unknown',
       level: json['level'] ?? 0,
+      examType: json['examType'],
       time: json['time'] ?? 0,
-      totalScore: json['totalScore'] ?? 180,
+      totalScore: json['score'] ?? json['totalScore'] ?? 180,
       passScore: json['passScore'] ?? 100,
       questionCount: json['questionCount'] ?? 45,
     );
@@ -147,6 +153,12 @@ class ExamService {
 
   Future<List<ExamHistoryModel>> getExamHistory() async {
     try {
+      debugPrint('========== EXAM HISTORY DEBUG ==========');
+      debugPrint('Token (first 50 chars): ${token.length > 50 ? token.substring(0, 50) : token}...');
+      debugPrint('Token length: ${token.length}');
+      debugPrint('Request URL: ${ApiConstants.baseUrl}${ApiConstants.historyExams}');
+      debugPrint('========================================');
+
       final response = await _client.get(
         Uri.parse('${ApiConstants.baseUrl}${ApiConstants.historyExams}'),
         headers: {
@@ -157,8 +169,13 @@ class ExamService {
 
       debugPrint('Exam History Response: ${response.statusCode}');
 
+      if (response.statusCode != 200) {
+        debugPrint('Exam History Error Response: ${response.body}');
+      }
+
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
+        debugPrint('Loaded ${data.length} exam history records');
         return data.map((item) => ExamHistoryModel.fromJson(item)).toList();
       }
       return [];

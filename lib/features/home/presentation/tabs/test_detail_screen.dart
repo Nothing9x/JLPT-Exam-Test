@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../data/services/exam_service.dart';
+import '../../data/services/exam_catalog_service.dart';
 import '../screens/exam_start_screen.dart';
 
 class TestDetailScreen extends StatefulWidget {
@@ -38,7 +39,36 @@ class _TestDetailScreenState extends State<TestDetailScreen> {
     final level = levelMap[widget.level] ?? 1;
 
     final userProfile = await _examService.getUserProfile();
-    final exams = await _examService.getExamsByLevel(level);
+
+    // Load exams from the external catalog based on selected exam type
+    // Map tab index to exam type:
+    // 0 => Full Test (examType = 0)
+    // 1 => Mini Test (examType = 1)
+    // 2 => NAT Test (examType = 2)
+    // 3 => Skill Test (examType = 3)
+    // 4 => Official (examType = 4)
+    // 5 => Official Skill (examType = 5)
+    // 6 => Prediction (examType = 6)
+    final examType = _selectedTabIndex;
+
+    debugPrint('========== TEST DETAIL SCREEN DEBUG ==========');
+    debugPrint('Loading exams for Level: ${widget.level} (numeric: $level)');
+    debugPrint('Selected Exam Type: $examType');
+    debugPrint('=============================================');
+
+    final exams = await ExamCatalogService.getExamsByLevelAndType(
+      level: level,
+      examType: examType,
+    );
+
+    debugPrint('Loaded ${exams.length} exams from catalog');
+    for (var i = 0; i < exams.length && i < 5; i++) {
+      debugPrint('Exam ${i + 1}: ID=${exams[i].id}, ExternalID=${exams[i].externalId}, Title=${exams[i].title}, Questions=${exams[i].questionCount}');
+    }
+    if (exams.length > 5) {
+      debugPrint('... and ${exams.length - 5} more exams');
+    }
+
     final examHistory = await _examService.getExamHistory();
 
     return {
@@ -119,30 +149,82 @@ class _TestDetailScreenState extends State<TestDetailScreen> {
                       ],
                     ),
                     const SizedBox(height: 16),
-                    // Tab Selector
-                    Row(
-                      children: [
-                        _buildTestTypeTab(
-                          label: 'Full Test',
-                          isActive: _selectedTabIndex == 0,
-                          isDark: isDark,
-                          onTap: () => setState(() => _selectedTabIndex = 0),
-                        ),
-                        const SizedBox(width: 24),
-                        _buildTestTypeTab(
-                          label: 'Mini Test',
-                          isActive: _selectedTabIndex == 1,
-                          isDark: isDark,
-                          onTap: () => setState(() => _selectedTabIndex = 1),
-                        ),
-                        const SizedBox(width: 24),
-                        _buildTestTypeTab(
-                          label: 'Skill Test',
-                          isActive: _selectedTabIndex == 2,
-                          isDark: isDark,
-                          onTap: () => setState(() => _selectedTabIndex = 2),
-                        ),
-                      ],
+                    // Tab Selector - Scrollable
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          _buildTestTypeTab(
+                            label: 'Full Test',
+                            isActive: _selectedTabIndex == 0,
+                            isDark: isDark,
+                            onTap: () => setState(() {
+                              _selectedTabIndex = 0;
+                              _dataFuture = _loadData();
+                            }),
+                          ),
+                          const SizedBox(width: 24),
+                          _buildTestTypeTab(
+                            label: 'Mini Test',
+                            isActive: _selectedTabIndex == 1,
+                            isDark: isDark,
+                            onTap: () => setState(() {
+                              _selectedTabIndex = 1;
+                              _dataFuture = _loadData();
+                            }),
+                          ),
+                          const SizedBox(width: 24),
+                          _buildTestTypeTab(
+                            label: 'NAT Test',
+                            isActive: _selectedTabIndex == 2,
+                            isDark: isDark,
+                            onTap: () => setState(() {
+                              _selectedTabIndex = 2;
+                              _dataFuture = _loadData();
+                            }),
+                          ),
+                          const SizedBox(width: 24),
+                          _buildTestTypeTab(
+                            label: 'Skill Test',
+                            isActive: _selectedTabIndex == 3,
+                            isDark: isDark,
+                            onTap: () => setState(() {
+                              _selectedTabIndex = 3;
+                              _dataFuture = _loadData();
+                            }),
+                          ),
+                          const SizedBox(width: 24),
+                          _buildTestTypeTab(
+                            label: 'Official',
+                            isActive: _selectedTabIndex == 4,
+                            isDark: isDark,
+                            onTap: () => setState(() {
+                              _selectedTabIndex = 4;
+                              _dataFuture = _loadData();
+                            }),
+                          ),
+                          const SizedBox(width: 24),
+                          _buildTestTypeTab(
+                            label: 'Official Skill',
+                            isActive: _selectedTabIndex == 5,
+                            isDark: isDark,
+                            onTap: () => setState(() {
+                              _selectedTabIndex = 5;
+                              _dataFuture = _loadData();
+                            }),
+                          ),
+                          const SizedBox(width: 24),
+                          _buildTestTypeTab(
+                            label: 'Prediction',
+                            isActive: _selectedTabIndex == 6,
+                            isDark: isDark,
+                            onTap: () => setState(() {
+                              _selectedTabIndex = 6;
+                              _dataFuture = _loadData();
+                            }),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),

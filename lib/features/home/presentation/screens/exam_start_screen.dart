@@ -29,7 +29,6 @@ class ExamStartScreen extends StatefulWidget {
 class _ExamStartScreenState extends State<ExamStartScreen> {
   ExamDetailModel? _preloadedExamDetail;
   bool _isPreloading = true;
-  String? _preloadError;
 
   @override
   void initState() {
@@ -39,34 +38,77 @@ class _ExamStartScreenState extends State<ExamStartScreen> {
 
   Future<void> _preloadExamData() async {
     try {
+      // Use externalId to query backend (server updated to use externalId)
+      final examId = widget.exam.externalId ?? widget.exam.id;
+
+      // Log exam information
+      debugPrint('========== EXAM START SCREEN DEBUG ==========');
+      debugPrint('Exam ID (from catalog): ${widget.exam.id}');
+      debugPrint('Exam External ID: ${widget.exam.externalId}');
+      debugPrint('Exam Title: ${widget.exam.title}');
+      debugPrint('Exam Type: ${widget.exam.examType}');
+      debugPrint('Exam Level: ${widget.exam.level}');
+      debugPrint('Exam Time: ${widget.exam.time}');
+      debugPrint('Exam Total Score: ${widget.exam.totalScore}');
+      debugPrint('Exam Pass Score: ${widget.exam.passScore}');
+      debugPrint('Exam Question Count (from catalog): ${widget.exam.questionCount}');
+      debugPrint('Query ID to backend: $examId');
+      debugPrint('Query URL: ${ApiConstants.baseUrl}/exams/$examId');
+      debugPrint('=============================================');
+
       final response = await http.get(
-        Uri.parse('${ApiConstants.baseUrl}/exams/${widget.exam.id}'),
+        Uri.parse('${ApiConstants.baseUrl}/exams/$examId'),
         headers: {
           'Content-Type': 'application/json',
           if (widget.token != null) 'Authorization': 'Bearer ${widget.token}',
         },
       );
 
+      debugPrint('Backend Response Status: ${response.statusCode}');
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
+        debugPrint('Backend Response Data: ${json.encode(data)}');
+
         if (mounted) {
           setState(() {
             _preloadedExamDetail = ExamDetailModel.fromJson(data);
+
+            // Detailed logging about the exam
+            debugPrint('========== EXAM DETAIL LOADED ==========');
+            debugPrint('Total Questions: ${_preloadedExamDetail!.getTotalQuestionCount()}');
+            debugPrint('Number of Parts: ${_preloadedExamDetail!.parts.length}');
+            for (var i = 0; i < _preloadedExamDetail!.parts.length; i++) {
+              final part = _preloadedExamDetail!.parts[i];
+              debugPrint('Part ${i + 1}: ${part.name}');
+              debugPrint('  - Sections: ${part.sections.length}');
+              int partQuestions = 0;
+              for (var section in part.sections) {
+                for (var group in section.questionGroups) {
+                  partQuestions += group.questions.length;
+                }
+              }
+              debugPrint('  - Total Questions in Part: $partQuestions');
+            }
+            debugPrint('========================================');
+
             _isPreloading = false;
           });
         }
       } else {
+        debugPrint('Backend Error Response: ${response.body}');
+        // Failed to preload, but allow user to continue
         if (mounted) {
           setState(() {
-            _preloadError = 'Failed to load exam data';
             _isPreloading = false;
           });
         }
       }
     } catch (e) {
+      debugPrint('Exception during preload: $e');
+      // Error during preload, but allow user to continue
       if (mounted) {
         setState(() {
-          _preloadError = 'Error: $e';
           _isPreloading = false;
         });
       }
@@ -74,15 +116,8 @@ class _ExamStartScreenState extends State<ExamStartScreen> {
   }
 
   void _startExam() {
-    if (_preloadedExamDetail == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Exam data not loaded. Please wait or try again.'),
-        ),
-      );
-      return;
-    }
-
+    // Allow starting exam even if preloading failed
+    // The ExamQuestionScreen will load the data if not preloaded
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -430,9 +465,7 @@ class _ExamStartScreenState extends State<ExamStartScreen> {
           child: SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: (_isPreloading || _preloadError != null)
-                  ? null
-                  : _startExam,
+              onPressed: _isPreloading ? null : _startExam,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.tealAccent,
                 foregroundColor: Colors.white,

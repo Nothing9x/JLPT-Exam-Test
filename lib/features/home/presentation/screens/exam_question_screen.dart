@@ -516,31 +516,55 @@ class _ExamQuestionScreenState extends State<ExamQuestionScreen> {
     );
 
     try {
+      // Use externalId if available, otherwise fall back to id
+      final examId = widget.exam.externalId ?? widget.exam.id;
+
+      final requestBody = {
+        'examId': examId,
+        'answers': _answers.map(
+          (key, value) => MapEntry(key.toString(), value),
+        ),
+      };
+
+      debugPrint('========== EXAM SUBMISSION DEBUG ==========');
+      debugPrint('Exam ID (catalog): ${widget.exam.id}');
+      debugPrint('Exam External ID: ${widget.exam.externalId}');
+      debugPrint('Submitting with examId: $examId');
+      debugPrint('Total answers: ${_answers.length}');
+      debugPrint('Submit URL: ${ApiConstants.baseUrl}/exams/submit');
+      debugPrint('Request body: ${json.encode(requestBody)}');
+      debugPrint('Token present: ${widget.token != null}');
+      debugPrint('Token length: ${widget.token?.length ?? 0}');
+      debugPrint('==========================================');
+
       final response = await http.post(
         Uri.parse('${ApiConstants.baseUrl}/exams/submit'),
         headers: {
           'Content-Type': 'application/json',
           if (widget.token != null) 'Authorization': 'Bearer ${widget.token}',
         },
-        body: json.encode({
-          'examId': widget.exam.id,
-          'answers': _answers.map(
-            (key, value) => MapEntry(key.toString(), value),
-          ),
-        }),
+        body: json.encode(requestBody),
       );
+
+      debugPrint('Submit Response Status: ${response.statusCode}');
+      debugPrint('Submit Response Body: ${response.body}');
 
       Navigator.pop(context); // Close loading
 
       if (response.statusCode == 200) {
         final result = json.decode(response.body);
+        debugPrint('Exam submitted successfully!');
         _navigateToResult(result);
       } else {
+        debugPrint('Submit failed with status: ${response.statusCode}');
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('Failed to submit exam')));
+        ).showSnackBar(SnackBar(
+          content: Text('Failed to submit exam (${response.statusCode})'),
+        ));
       }
     } catch (e) {
+      debugPrint('Submit Exception: $e');
       Navigator.pop(context);
       ScaffoldMessenger.of(
         context,
@@ -549,30 +573,88 @@ class _ExamQuestionScreenState extends State<ExamQuestionScreen> {
   }
 
   void _navigateToResult(Map<String, dynamic> result) {
+    debugPrint('========== RESULT CALCULATION DEBUG ==========');
+    debugPrint('Result data: ${json.encode(result)}');
+
     // Calculate part scores from the result
     final Map<String, int> partScores = {};
-    final answersData = result['answers'] as List? ?? [];
+    // Backend returns answers in 'details' field, not 'answers'
+    final answersData = result['details'] as List? ?? result['answers'] as List? ?? [];
+
+    debugPrint('Total answers in result: ${answersData.length}');
 
     // Map question IDs to their parts
     final Map<int, String> questionToPart = {};
     for (var part in _examDetail!.parts) {
+      debugPrint('Processing part: ${part.name}');
       for (var section in part.sections) {
         for (var group in section.questionGroups) {
           for (var question in group.questions) {
             questionToPart[question.id] = part.name;
+            debugPrint('  - Question ID ${question.id} -> ${part.name}');
           }
         }
       }
     }
 
+    debugPrint('Total question mappings: ${questionToPart.length}');
+    debugPrint('Question IDs mapped: ${questionToPart.keys.toList()}');
+
     // Calculate scores per part
+    int unmappedCount = 0;
+
+    // Log first answer structure to see available fields
+    if (answersData.isNotEmpty) {
+      debugPrint('Sample answer structure: ${json.encode(answersData[0])}');
+    }
+
     for (var answer in answersData) {
       final questionId = answer['questionId'] as int? ?? 0;
       final isCorrect = answer['isCorrect'] as bool? ?? false;
-      final partName = questionToPart[questionId] ?? 'Unknown';
+      final score = answer['score'] as num? ?? answer['points'] as num? ?? 0;
+      final partName = questionToPart[questionId];
 
-      partScores[partName] = (partScores[partName] ?? 0) + (isCorrect ? 1 : 0);
+      debugPrint('Answer - QuestionID: $questionId, IsCorrect: $isCorrect, Score: $score, MappedPart: $partName');
+
+      if (partName != null) {
+        // If backend provides score/points per question, use that; otherwise count correct answers
+        if (score > 0 && isCorrect) {
+          partScores[partName] = (partScores[partName] ?? 0) + score.toInt();
+        } else {
+          partScores[partName] = (partScores[partName] ?? 0) + (isCorrect ? 1 : 0);
+        }
+      } else {
+        unmappedCount++;
+        debugPrint('  WARNING: Question ID $questionId not found in exam detail!');
+      }
     }
+
+    debugPrint('Part correct counts: $partScores');
+    debugPrint('Unmapped questions: $unmappedCount');
+
+    // Since backend doesn't provide per-question scores, calculate proportionally
+    // based on the total score and distribution of correct answers
+    final totalCorrect = partScores.values.fold(0, (sum, count) => sum + count);
+    final yourScore = result['yourScore'] as int? ?? 0;
+
+    debugPrint('Total correct answers: $totalCorrect');
+    debugPrint('Your total score: $yourScore');
+
+    // Calculate proportional scores for each part
+    final Map<String, int> calculatedPartScores = {};
+    if (totalCorrect > 0) {
+      for (var entry in partScores.entries) {
+        final partName = entry.key;
+        final correctCount = entry.value;
+        // Distribute the total score proportionally based on correct answers
+        final partScore = ((correctCount / totalCorrect) * yourScore).round();
+        calculatedPartScores[partName] = partScore;
+        debugPrint('$partName: $correctCount correct → $partScore points');
+      }
+    }
+
+    debugPrint('Final calculated part scores: $calculatedPartScores');
+    debugPrint('============================================');
 
     // Get level string from exam level
     final levelMap = {5: 'N5', 4: 'N4', 3: 'N3', 2: 'N2', 1: 'N1'};
@@ -589,7 +671,7 @@ class _ExamQuestionScreenState extends State<ExamQuestionScreen> {
           isPassed: result['isPassed'] as bool? ?? false,
           candidateName: widget.userName ?? 'Test Candidate',
           parts: _examDetail!.parts,
-          partScores: partScores,
+          partScores: calculatedPartScores,
         ),
       ),
     );

@@ -1101,6 +1101,11 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 - GET `/mytest/questions`
 - POST `/mytest/generate`
 - GET `/mytest/questions/{id}/answer`
+- GET `/external-exams/catalog`
+- GET `/external-exams`
+- GET `/external-exams/level/{level}`
+- GET `/external-exams/type/{type}`
+- GET `/external-exams/statistics`
 
 ---
 
@@ -1436,6 +1441,247 @@ GET /mytest/questions/12345/answer
 | 19 | LISTENING | Trả lời nhanh | Trả lời nhanh |
 | 20 | LISTENING | Nghe hiểu tổng hợp | Nghe hiểu tổng hợp |
 | 21 | LISTENING | Nghe hiểu diễn đạt | Nghe hiểu diễn đạt |
+
+---
+
+## 8. External Exam Catalog APIs
+
+API để lấy danh sách các đề thi từ nguồn bên ngoài (eupgroup). Dữ liệu được đồng bộ và lưu trong database.
+
+### 8.1 Exam Types Reference
+
+| Type | Name | Name (Vietnamese) | Description |
+|------|------|-------------------|-------------|
+| 0 | Full Test | Đề thi đầy đủ | Full practice exam |
+| 1 | Mini Test | Đề thi mini | Short practice exam |
+| 2 | NAT Test | Đề thi NAT | NAT-TEST format exam |
+| 3 | Skill Test | Đề thi theo kỹ năng | Skill-specific exam (Vocabulary, Reading, Listening) |
+| 4 | Official Exam | Đề thi chính thức | Official JLPT exam |
+| 5 | Official Skill Exam | Đề thi chính thức theo skill | Official skill-specific exam |
+| 6 | Prediction Test | Dự đoán đề thi | Exam prediction/practice |
+
+---
+
+### 8.2 Get Exam Catalog
+**GET** `/external-exams/catalog`
+
+Lấy toàn bộ catalog đề thi với thống kê theo level và type.
+
+**Example Request**:
+```
+GET /external-exams/catalog
+```
+
+**Response** `200 OK`:
+```json
+{
+  "totalExams": 339,
+  "levels": [
+    {"level": 1, "name": "N1", "count": 58},
+    {"level": 2, "name": "N2", "count": 69},
+    {"level": 3, "name": "N3", "count": 66},
+    {"level": 4, "name": "N4", "count": 73},
+    {"level": 5, "name": "N5", "count": 73}
+  ],
+  "types": [
+    {"type": 0, "name": "Full Test", "nameVn": "Đề thi đầy đủ", "count": 100},
+    {"type": 1, "name": "Mini Test", "nameVn": "Đề thi mini", "count": 25},
+    {"type": 2, "name": "NAT Test", "nameVn": "Đề thi NAT", "count": 65},
+    {"type": 3, "name": "Skill Test", "nameVn": "Đề thi theo kỹ năng", "count": 65},
+    {"type": 4, "name": "Official Exam", "nameVn": "Đề thi chính thức", "count": 59},
+    {"type": 5, "name": "Official Skill Exam", "nameVn": "Đề thi chính thức theo skill", "count": 15},
+    {"type": 6, "name": "Prediction Test", "nameVn": "Dự đoán đề thi", "count": 10}
+  ],
+  "exams": {
+    "Full Test": [
+      {
+        "id": 1,
+        "externalId": 715,
+        "title": "Test 1",
+        "level": 1,
+        "levelName": "N1",
+        "examType": 0,
+        "examTypeName": "Full Test",
+        "examTypeNameVn": "Đề thi đầy đủ",
+        "time": 165,
+        "score": 180,
+        "passScore": 100
+      }
+    ]
+  }
+}
+```
+
+---
+
+### 8.3 Get Exams by Filter
+**GET** `/external-exams?level={level}&type={type}`
+
+Lấy danh sách đề thi với filter theo level và/hoặc type.
+
+**Query Parameters**:
+- `level` (optional): JLPT level (1-5 for N1-N5)
+- `type` (optional): Exam type (0-6)
+
+**Example Request**:
+```
+GET /external-exams?level=5&type=0
+```
+
+**Response** `200 OK`:
+```json
+{
+  "level": 5,
+  "levelName": "N5",
+  "examType": 0,
+  "examTypeName": "Full Test",
+  "count": 20,
+  "exams": [
+    {
+      "id": 267,
+      "externalId": 739,
+      "title": "Test 1",
+      "level": 5,
+      "levelName": "N5",
+      "examType": 0,
+      "examTypeName": "Full Test",
+      "examTypeNameVn": "Đề thi đầy đủ",
+      "time": 90,
+      "score": 180,
+      "passScore": 80
+    },
+    {
+      "id": 268,
+      "externalId": 740,
+      "title": "Test 2",
+      "level": 5,
+      "levelName": "N5",
+      "examType": 0,
+      "examTypeName": "Full Test",
+      "examTypeNameVn": "Đề thi đầy đủ",
+      "time": 90,
+      "score": 180,
+      "passScore": 80
+    }
+  ]
+}
+```
+
+---
+
+### 8.4 Get Exams by Level
+**GET** `/external-exams/level/{level}?type={type}`
+
+Lấy danh sách đề thi theo level với filter type tùy chọn.
+
+**Path Parameters**:
+- `level`: JLPT level (1-5)
+
+**Query Parameters**:
+- `type` (optional): Exam type (0-6)
+
+**Example Request**:
+```
+GET /external-exams/level/3?type=4
+```
+
+---
+
+### 8.5 Get Exams by Type
+**GET** `/external-exams/type/{type}?level={level}`
+
+Lấy danh sách đề thi theo type với filter level tùy chọn.
+
+**Path Parameters**:
+- `type`: Exam type (0-6)
+
+**Query Parameters**:
+- `level` (optional): JLPT level (1-5)
+
+**Example Request**:
+```
+GET /external-exams/type/4?level=2
+```
+
+---
+
+### 8.6 Get Statistics
+**GET** `/external-exams/statistics`
+
+Lấy thống kê số lượng đề thi.
+
+**Example Request**:
+```
+GET /external-exams/statistics
+```
+
+**Response** `200 OK`:
+```json
+{
+  "totalExams": 339,
+  "byLevel": {
+    "N1": 58,
+    "N2": 69,
+    "N3": 66,
+    "N4": 73,
+    "N5": 73
+  },
+  "byType": {
+    "Full Test": 100,
+    "Mini Test": 25,
+    "NAT Test": 65,
+    "Skill Test": 65,
+    "Official Exam": 59,
+    "Official Skill Exam": 15,
+    "Prediction Test": 10
+  }
+}
+```
+
+---
+
+### 8.7 Admin: Sync from External API
+**POST** `/external-exams/admin/sync`
+
+Đồng bộ dữ liệu đề thi từ API bên ngoài (eupgroup).
+
+**Example Request**:
+```
+POST /external-exams/admin/sync
+```
+
+**Response** `200 OK`:
+```json
+{
+  "totalFetched": 339,
+  "totalInserted": 339,
+  "totalSkipped": 0,
+  "errors": []
+}
+```
+
+---
+
+### 8.8 Admin: Export to JSON
+**POST** `/external-exams/admin/export?filePath={filePath}`
+
+Export catalog ra file JSON cho app local.
+
+**Query Parameters**:
+- `filePath` (optional): Đường dẫn file output (default: `data/external_exam_catalog.json`)
+
+**Example Request**:
+```
+POST /external-exams/admin/export
+```
+
+**Response** `200 OK`:
+```json
+{
+  "message": "Catalog exported successfully",
+  "filePath": "/path/to/data/external_exam_catalog.json"
+}
+```
 
 ---
 
