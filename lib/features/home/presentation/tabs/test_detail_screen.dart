@@ -6,6 +6,7 @@ import '../screens/exam_start_screen.dart';
 
 class TestDetailScreen extends StatefulWidget {
   final String level;
+  final String category; // JLPT, NAT, or JFT
   final String languageCode;
   final String? token;
   final VoidCallback? onNavigateToUpgrade;
@@ -13,6 +14,7 @@ class TestDetailScreen extends StatefulWidget {
   const TestDetailScreen({
     super.key,
     required this.level,
+    required this.category,
     required this.languageCode,
     this.token,
     this.onNavigateToUpgrade,
@@ -40,19 +42,36 @@ class _TestDetailScreenState extends State<TestDetailScreen> {
 
     final userProfile = await _examService.getUserProfile();
 
-    // Load exams from the external catalog based on selected exam type
-    // Map tab index to exam type:
-    // 0 => Full Test (examType = 0)
-    // 1 => Mini Test (examType = 1)
-    // 2 => NAT Test (examType = 2)
-    // 3 => Skill Test (examType = 3)
-    // 4 => Official (examType = 4)
-    // 5 => Official Skill (examType = 5)
-    // 6 => Prediction (examType = 6)
-    final examType = _selectedTabIndex;
+    // Load exams from the external catalog based on category and selected tab
+    int examType;
+
+    if (widget.category == 'JLPT') {
+      // JLPT: Full Test (0), Mini Test (1), Skill Test (3)
+      switch (_selectedTabIndex) {
+        case 0:
+          examType = 0; // Full Test
+          break;
+        case 1:
+          examType = 1; // Mini Test
+          break;
+        case 2:
+          examType = 3; // Skill Test
+          break;
+        default:
+          examType = 0;
+      }
+    } else if (widget.category == 'NAT') {
+      // NAT: Only NAT Test (2)
+      examType = 2;
+    } else {
+      // JFT or other categories
+      examType = 0;
+    }
 
     debugPrint('========== TEST DETAIL SCREEN DEBUG ==========');
+    debugPrint('Category: ${widget.category}');
     debugPrint('Loading exams for Level: ${widget.level} (numeric: $level)');
+    debugPrint('Selected Tab Index: $_selectedTabIndex');
     debugPrint('Selected Exam Type: $examType');
     debugPrint('=============================================');
 
@@ -138,7 +157,7 @@ class _TestDetailScreenState extends State<TestDetailScreen> {
                           ),
                         ),
                         Text(
-                          'JLPT ${widget.level}',
+                          '${widget.category} ${widget.level}',
                           style: const TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.w800,
@@ -149,83 +168,57 @@ class _TestDetailScreenState extends State<TestDetailScreen> {
                       ],
                     ),
                     const SizedBox(height: 16),
-                    // Tab Selector - Scrollable
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: [
-                          _buildTestTypeTab(
-                            label: 'Full Test',
-                            isActive: _selectedTabIndex == 0,
-                            isDark: isDark,
-                            onTap: () => setState(() {
-                              _selectedTabIndex = 0;
-                              _dataFuture = _loadData();
-                            }),
+                    // Tab Selector - Different tabs based on category
+                    if (widget.category == 'JLPT')
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            _buildTestTypeTab(
+                              label: 'Full Test',
+                              isActive: _selectedTabIndex == 0,
+                              isDark: isDark,
+                              onTap: () => setState(() {
+                                _selectedTabIndex = 0;
+                                _dataFuture = _loadData();
+                              }),
+                            ),
+                            const SizedBox(width: 24),
+                            _buildTestTypeTab(
+                              label: 'Mini Test',
+                              isActive: _selectedTabIndex == 1,
+                              isDark: isDark,
+                              onTap: () => setState(() {
+                                _selectedTabIndex = 1;
+                                _dataFuture = _loadData();
+                              }),
+                            ),
+                            const SizedBox(width: 24),
+                            _buildTestTypeTab(
+                              label: 'Skill Test',
+                              isActive: _selectedTabIndex == 2,
+                              isDark: isDark,
+                              onTap: () => setState(() {
+                                _selectedTabIndex = 2;
+                                _dataFuture = _loadData();
+                              }),
+                            ),
+                          ],
+                        ),
+                      )
+                    else if (widget.category == 'NAT')
+                      // NAT has only one type, show no tabs or a single "NAT Test" label
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: Text(
+                          'NAT Test',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.tealAccent,
                           ),
-                          const SizedBox(width: 24),
-                          _buildTestTypeTab(
-                            label: 'Mini Test',
-                            isActive: _selectedTabIndex == 1,
-                            isDark: isDark,
-                            onTap: () => setState(() {
-                              _selectedTabIndex = 1;
-                              _dataFuture = _loadData();
-                            }),
-                          ),
-                          const SizedBox(width: 24),
-                          _buildTestTypeTab(
-                            label: 'NAT Test',
-                            isActive: _selectedTabIndex == 2,
-                            isDark: isDark,
-                            onTap: () => setState(() {
-                              _selectedTabIndex = 2;
-                              _dataFuture = _loadData();
-                            }),
-                          ),
-                          const SizedBox(width: 24),
-                          _buildTestTypeTab(
-                            label: 'Skill Test',
-                            isActive: _selectedTabIndex == 3,
-                            isDark: isDark,
-                            onTap: () => setState(() {
-                              _selectedTabIndex = 3;
-                              _dataFuture = _loadData();
-                            }),
-                          ),
-                          const SizedBox(width: 24),
-                          _buildTestTypeTab(
-                            label: 'Official',
-                            isActive: _selectedTabIndex == 4,
-                            isDark: isDark,
-                            onTap: () => setState(() {
-                              _selectedTabIndex = 4;
-                              _dataFuture = _loadData();
-                            }),
-                          ),
-                          const SizedBox(width: 24),
-                          _buildTestTypeTab(
-                            label: 'Official Skill',
-                            isActive: _selectedTabIndex == 5,
-                            isDark: isDark,
-                            onTap: () => setState(() {
-                              _selectedTabIndex = 5;
-                              _dataFuture = _loadData();
-                            }),
-                          ),
-                          const SizedBox(width: 24),
-                          _buildTestTypeTab(
-                            label: 'Prediction',
-                            isActive: _selectedTabIndex == 6,
-                            isDark: isDark,
-                            onTap: () => setState(() {
-                              _selectedTabIndex = 6;
-                              _dataFuture = _loadData();
-                            }),
-                          ),
-                        ],
+                        ),
                       ),
-                    ),
                   ],
                 ),
               ),

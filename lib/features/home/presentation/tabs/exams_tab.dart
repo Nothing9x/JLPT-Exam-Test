@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../data/services/exam_catalog_service.dart';
 import 'test_detail_screen.dart';
 
 class ExamsTab extends StatefulWidget {
@@ -20,44 +21,115 @@ class ExamsTab extends StatefulWidget {
 
 class _ExamsTabState extends State<ExamsTab> {
   int _selectedTabIndex = 0;
+  Map<String, Map<int, int>> _examCounts = {}; // category -> {level -> count}
+  bool _isLoading = true;
 
   final List<Map<String, dynamic>> examLevels = [
     {
       'level': 'N5',
+      'levelNum': 5,
       'title': 'Basic Japanese',
       'subtitle': 'Fundamental Level',
-      'questions': 25,
-      'passScore': '80/120',
+      'passScore': '80/180',
     },
     {
       'level': 'N4',
+      'levelNum': 4,
       'title': 'Elementary',
       'subtitle': 'Basic Application',
-      'questions': 30,
       'passScore': '90/180',
     },
     {
       'level': 'N3',
+      'levelNum': 3,
       'title': 'Intermediate',
       'subtitle': 'Bridging Level',
-      'questions': 35,
       'passScore': '95/180',
     },
     {
       'level': 'N2',
+      'levelNum': 2,
       'title': 'Pre-Advanced',
       'subtitle': 'Business Level',
-      'questions': 40,
       'passScore': '100/180',
     },
     {
       'level': 'N1',
+      'levelNum': 1,
       'title': 'Advanced',
       'subtitle': 'Native Level',
-      'questions': 45,
       'passScore': '100/180',
     },
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadExamCounts();
+  }
+
+  Future<void> _loadExamCounts() async {
+    setState(() => _isLoading = true);
+
+    try {
+      // Load exam counts for each category and level
+      final counts = <String, Map<int, int>>{
+        'JLPT': {},
+        'NAT': {},
+        'JFT': {},
+      };
+
+      for (var level in examLevels) {
+        final levelNum = level['levelNum'] as int;
+
+        // JLPT: Full Test (0) + Mini Test (1) + Skill Test (3)
+        final jlptFullTests = await ExamCatalogService.getExamsByLevelAndType(
+          level: levelNum,
+          examType: 0,
+        );
+        final jlptMiniTests = await ExamCatalogService.getExamsByLevelAndType(
+          level: levelNum,
+          examType: 1,
+        );
+        final jlptSkillTests = await ExamCatalogService.getExamsByLevelAndType(
+          level: levelNum,
+          examType: 3,
+        );
+        counts['JLPT']![levelNum] = jlptFullTests.length + jlptMiniTests.length + jlptSkillTests.length;
+
+        // NAT: NAT Test (2)
+        final natTests = await ExamCatalogService.getExamsByLevelAndType(
+          level: levelNum,
+          examType: 2,
+        );
+        counts['NAT']![levelNum] = natTests.length;
+
+        // JFT: For now, no specific exam type
+        counts['JFT']![levelNum] = 0;
+      }
+
+      setState(() {
+        _examCounts = counts;
+        _isLoading = false;
+      });
+    } catch (e) {
+      debugPrint('Error loading exam counts: $e');
+      setState(() => _isLoading = false);
+    }
+  }
+
+  String get _currentCategory {
+    switch (_selectedTabIndex) {
+      case 0:
+        return 'JLPT';
+      case 1:
+        return 'NAT';
+      case 2:
+        return 'JFT';
+      default:
+        return 'JLPT';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -152,9 +224,9 @@ class _ExamsTabState extends State<ExamsTab> {
                     child: _buildExamCard(
                       context,
                       level: examLevels[index]['level'],
+                      levelNum: examLevels[index]['levelNum'],
                       title: examLevels[index]['title'],
                       subtitle: examLevels[index]['subtitle'],
-                      questions: examLevels[index]['questions'],
                       passScore: examLevels[index]['passScore'],
                       isDark: isDark,
                     ),
@@ -212,12 +284,15 @@ class _ExamsTabState extends State<ExamsTab> {
   Widget _buildExamCard(
     BuildContext context, {
     required String level,
+    required int levelNum,
     required String title,
     required String subtitle,
-    required int questions,
     required String passScore,
     required bool isDark,
   }) {
+    // Get exam count for this level and category
+    final examCount = _examCounts[_currentCategory]?[levelNum] ?? 0;
+
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -225,6 +300,7 @@ class _ExamsTabState extends State<ExamsTab> {
           MaterialPageRoute(
             builder: (context) => TestDetailScreen(
               level: level,
+              category: _currentCategory,
               languageCode: widget.languageCode,
               token: widget.token,
               onNavigateToUpgrade: widget.onNavigateToUpgrade,
@@ -351,7 +427,7 @@ class _ExamsTabState extends State<ExamsTab> {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      '$questions Questions',
+                      '$examCount Exams',
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
