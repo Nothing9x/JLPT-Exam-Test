@@ -53,6 +53,9 @@ dependencies:
   # HTML rendering for explanations
   flutter_html: ^3.0.0-beta.2
 
+  # Audio player for listening questions
+  audioplayers: ^6.0.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
+import 'package:audioplayers/audioplayers.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/constants/api_constants.dart';
 import '../../data/services/practice_question_service.dart';
 import '../../data/services/vocabulary_stats_service.dart';
 import 'dart:async';
@@ -38,6 +40,19 @@ class _PracticeQuestionScreenState extends State<PracticeQuestionScreen> {
   bool _showExplanation = false;
   Timer? _timer;
   int _remainingSeconds = 0;
+  AudioPlayer? _audioPlayer;
+  bool _isPlayingAudio = false;
+  bool _isLoadingAudio = false;
+  bool _isInitializingAudio = false; // Guard to prevent multiple simultaneous inits
+  Duration _audioDuration = Duration.zero;
+  Duration _audioPosition = Duration.zero;
+  String? _currentAudioPath;
+
+  // Stream subscriptions for audio player
+  StreamSubscription? _playerStateSubscription;
+  StreamSubscription? _durationSubscription;
+  StreamSubscription? _positionSubscription;
+  StreamSubscription? _completeSubscription;
 
   @override
   void initState() {
@@ -49,8 +64,193 @@ class _PracticeQuestionScreenState extends State<PracticeQuestionScreen> {
   @override
   void dispose() {
     _timer?.cancel();
+    _playerStateSubscription?.cancel();
+    _durationSubscription?.cancel();
+    _positionSubscription?.cancel();
+    _completeSubscription?.cancel();
+    _audioPlayer?.dispose();
     _service.dispose();
     super.dispose();
+  }
+
+  /// Determine category from typeId based on API documentation
+  /// TypeId 1-6: VOCABULARY
+  /// TypeId 7-9: GRAMMAR
+  /// TypeId 10-15: READING
+  /// TypeId 16-21: LISTENING
+  String _getCategoryFromTypeId(int typeId) {
+    if (typeId >= 1 && typeId <= 6) {
+      return 'VOCABULARY';
+    } else if (typeId >= 7 && typeId <= 9) {
+      return 'GRAMMAR';
+    } else if (typeId >= 10 && typeId <= 15) {
+      return 'READING';
+    } else if (typeId >= 16 && typeId <= 21) {
+      return 'LISTENING';
+    } else {
+      debugPrint('⚠️ Unknown typeId: $typeId, defaulting to VOCABULARY');
+      return 'VOCABULARY';
+    }
+  }
+
+  /// Validate if a media path (audio/image) is valid
+  bool _isValidMediaPath(String? path) {
+    if (path == null) return false;
+    final trimmed = path.trim();
+    if (trimmed.isEmpty) return false;
+    // Check for common invalid values
+    if (trimmed == 'null' || trimmed == 'undefined' || trimmed == 'N/A') {
+      return false;
+    }
+    // Must have at least 5 characters (e.g., "/a.mp3")
+    if (trimmed.length < 5) return false;
+    return true;
+  }
+
+  Future<void> _initAudioPlayer(String audioPath) async {
+    // Prevent multiple simultaneous initializations
+    if (_isInitializingAudio) {
+      debugPrint('⚠️ Audio initialization already in progress, skipping');
+      return;
+    }
+
+    // Check if this is the same audio that's already loaded
+    if (_currentAudioPath == audioPath && _audioPlayer != null) {
+      debugPrint('ℹ️ Audio already loaded for this path');
+      return;
+    }
+
+    _isInitializingAudio = true;
+    setState(() => _isLoadingAudio = true);
+
+    try {
+      // Cancel existing subscriptions
+      await _playerStateSubscription?.cancel();
+      await _durationSubscription?.cancel();
+      await _positionSubscription?.cancel();
+      await _completeSubscription?.cancel();
+
+      // Stop and release old player if exists (don't await to avoid blocking)
+      if (_audioPlayer != null) {
+        _audioPlayer!.stop();
+        _audioPlayer!.release();
+      }
+
+      // Create new player
+      _audioPlayer = AudioPlayer();
+
+      // Get base URL without /api
+      final baseUrl = ApiConstants.baseUrl.replaceAll('/api', '');
+      // Ensure audioPath starts with / for proper URL construction
+      final normalizedPath = audioPath.startsWith('/') ? audioPath : '/$audioPath';
+      final fullAudioUrl = '$baseUrl$normalizedPath';
+
+      debugPrint('=== Loading Audio ===');
+      debugPrint('Audio Path: $audioPath');
+      debugPrint('Full URL: $fullAudioUrl');
+
+      // Set up listeners BEFORE setting the source and store subscriptions
+      _playerStateSubscription = _audioPlayer!.onPlayerStateChanged.listen((state) {
+        if (mounted) {
+          setState(() {
+            _isPlayingAudio = state == PlayerState.playing;
+          });
+        }
+      });
+
+      _durationSubscription = _audioPlayer!.onDurationChanged.listen((duration) {
+        if (mounted) {
+          setState(() {
+            _audioDuration = duration;
+          });
+        }
+      });
+
+      _positionSubscription = _audioPlayer!.onPositionChanged.listen((position) {
+        if (mounted) {
+          setState(() {
+            _audioPosition = position;
+          });
+        }
+      });
+
+      _completeSubscription = _audioPlayer!.onPlayerComplete.listen((event) {
+        if (mounted) {
+          setState(() {
+            _isPlayingAudio = false;
+            _audioPosition = Duration.zero;
+          });
+        }
+      });
+
+      // Set the audio source - catch timeout exceptions which are normal for large files
+      try {
+        await _audioPlayer!.setSource(UrlSource(fullAudioUrl));
+        debugPrint('✓ Audio source set successfully');
+      } on TimeoutException catch (e) {
+        // Timeout is expected for large audio files - audio continues preparing in background
+        debugPrint('⏱️ Audio preparation timeout (audio will continue loading): $e');
+        // Don't return - continue with setup
+      }
+
+      // Track current audio path
+      _currentAudioPath = audioPath;
+
+      setState(() => _isLoadingAudio = false);
+
+    } catch (e, stackTrace) {
+      debugPrint('✗ Error initializing audio player: $e');
+      debugPrint('Stack trace: $stackTrace');
+      setState(() => _isLoadingAudio = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to load audio: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      _isInitializingAudio = false;
+    }
+  }
+
+  Future<void> _toggleAudioPlayback() async {
+    if (_audioPlayer == null) {
+      debugPrint('⚠️ Audio player is null');
+      return;
+    }
+
+    try {
+      if (_isPlayingAudio) {
+        debugPrint('⏸️ Pausing audio');
+        await _audioPlayer!.pause();
+      } else {
+        debugPrint('▶️ Playing audio');
+        await _audioPlayer!.resume();
+      }
+    } catch (e, stackTrace) {
+      debugPrint('✗ Error toggling audio playback: $e');
+      debugPrint('Stack trace: $stackTrace');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to play audio: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _stopAudio() {
+    _audioPlayer?.stop();
+    setState(() {
+      _isPlayingAudio = false;
+      _isLoadingAudio = false;
+      _audioPosition = Duration.zero;
+      _currentAudioPath = null;
+    });
   }
 
   Future<void> _loadQuestions() async {
@@ -62,9 +262,12 @@ class _PracticeQuestionScreenState extends State<PracticeQuestionScreen> {
 
       // Fetch more questions than needed to filter out practiced ones
       final fetchLimit = widget.questionCount * 3;
+      final category = _getCategoryFromTypeId(widget.practiceType.typeId);
+      debugPrint('🔍 Determined category: $category for typeId: ${widget.practiceType.typeId}');
+
       final allQuestions = await _service.getQuestions(
         level: widget.userLevel,
-        category: 'VOCABULARY',
+        category: category,
         typeId: widget.practiceType.typeId,
         limit: fetchLimit,
       );
@@ -163,6 +366,7 @@ class _PracticeQuestionScreenState extends State<PracticeQuestionScreen> {
 
   void _nextQuestion() {
     if (_currentQuestionIndex < _questions.length - 1) {
+      _stopAudio(); // Stop audio when moving to next question
       setState(() {
         _currentQuestionIndex++;
         _showingAnswer = false;
@@ -182,6 +386,7 @@ class _PracticeQuestionScreenState extends State<PracticeQuestionScreen> {
           userAnswers: _userAnswers,
           currentIndex: _currentQuestionIndex,
           onQuestionTap: (index) {
+            _stopAudio(); // Stop audio when jumping to another question
             setState(() {
               _currentQuestionIndex = index;
               _showingAnswer = false;
@@ -646,34 +851,48 @@ class _PracticeQuestionScreenState extends State<PracticeQuestionScreen> {
                 ),
               ),
             ),
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: isDark ? AppColors.cardBackgroundDark : Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: isDark ? AppColors.borderDark : AppColors.borderLight,
+          // Audio player
+          if (_isValidMediaPath(currentQuestion.audio))
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: _buildAudioPlayer(currentQuestion.audio!, isDark),
+            ),
+          // Image display
+          if (_isValidMediaPath(currentQuestion.image))
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: _buildImageDisplay(currentQuestion.image!, isDark),
+            ),
+          // Question container - only render if question text is not empty
+          if (currentQuestion.question.trim().isNotEmpty)
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.cardBackgroundDark : Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: isDark ? AppColors.borderDark : AppColors.borderLight,
+                ),
+              ),
+              child: Html(
+                data: currentQuestion.question,
+                style: {
+                  "body": Style(
+                    fontSize: FontSize(20),
+                    fontWeight: FontWeight.w600,
+                    color: isDark
+                        ? AppColors.textPrimaryDark
+                        : AppColors.textPrimaryLight,
+                    lineHeight: LineHeight.number(1.6),
+                    margin: Margins.zero,
+                    padding: HtmlPaddings.zero,
+                  ),
+                  "u": Style(
+                    textDecoration: TextDecoration.underline,
+                  ),
+                },
               ),
             ),
-            child: Html(
-              data: currentQuestion.question,
-              style: {
-                "body": Style(
-                  fontSize: FontSize(20),
-                  fontWeight: FontWeight.w600,
-                  color: isDark
-                      ? AppColors.textPrimaryDark
-                      : AppColors.textPrimaryLight,
-                  lineHeight: LineHeight.number(1.6),
-                  margin: Margins.zero,
-                  padding: HtmlPaddings.zero,
-                ),
-                "u": Style(
-                  textDecoration: TextDecoration.underline,
-                ),
-              },
-            ),
-          ),
           const SizedBox(height: 24),
           // Answers
           ...List.generate(
@@ -903,6 +1122,7 @@ class _PracticeQuestionScreenState extends State<PracticeQuestionScreen> {
             width: double.infinity,
             child: ElevatedButton(
               onPressed: () {
+                _stopAudio(); // Stop audio when moving to next question
                 setState(() {
                   _currentQuestionIndex++;
                 });
@@ -1021,6 +1241,157 @@ class _PracticeQuestionScreenState extends State<PracticeQuestionScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildAudioPlayer(String audioPath, bool isDark) {
+    // Initialize audio player only if audio path has changed and not already initializing
+    if (_currentAudioPath != audioPath && !_isInitializingAudio) {
+      // Use Future.microtask to avoid calling setState during build
+      Future.microtask(() => _initAudioPlayer(audioPath));
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark
+            ? AppColors.cardBackgroundDark
+            : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? AppColors.borderDark : AppColors.borderLight,
+        ),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              // Play/Pause button or loading indicator
+              _isLoadingAudio
+                  ? Container(
+                      width: 48,
+                      height: 48,
+                      margin: const EdgeInsets.all(8),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 3,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          AppColors.tealAccent,
+                        ),
+                      ),
+                    )
+                  : IconButton(
+                      onPressed: _audioPlayer != null ? _toggleAudioPlayback : null,
+                      icon: Icon(
+                        _isPlayingAudio ? Icons.pause_circle : Icons.play_circle,
+                        size: 48,
+                        color: _audioPlayer != null
+                            ? AppColors.tealAccent
+                            : Colors.grey,
+                      ),
+                    ),
+              const SizedBox(width: 12),
+              // Progress and time
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Audio',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: isDark
+                                ? AppColors.textPrimaryDark
+                                : AppColors.textPrimaryLight,
+                          ),
+                        ),
+                        Text(
+                          '${_formatDuration(_audioPosition)} / ${_formatDuration(_audioDuration)}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: isDark
+                                ? AppColors.textSecondaryDark
+                                : AppColors.textSecondaryLight,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    // Progress bar
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                        value: _audioDuration.inMilliseconds > 0
+                            ? _audioPosition.inMilliseconds /
+                                _audioDuration.inMilliseconds
+                            : 0.0,
+                        minHeight: 4,
+                        backgroundColor: isDark
+                            ? AppColors.borderDark
+                            : AppColors.borderLight,
+                        valueColor: const AlwaysStoppedAnimation<Color>(
+                          AppColors.tealAccent,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildImageDisplay(String imagePath, bool isDark) {
+    debugPrint('=== Building Image Display ===');
+    debugPrint('Image Path: "$imagePath"');
+    debugPrint('Image Path Length: ${imagePath.length}');
+
+    // Get base URL without /api
+    final baseUrl = ApiConstants.baseUrl.replaceAll('/api', '');
+    // Ensure imagePath starts with / for proper URL construction
+    final normalizedPath = imagePath.startsWith('/') ? imagePath : '/$imagePath';
+    final fullImageUrl = '$baseUrl$normalizedPath';
+    debugPrint('Full Image URL: $fullImageUrl');
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: Image.network(
+        fullImageUrl,
+        fit: BoxFit.contain,
+        errorBuilder: (context, error, stackTrace) {
+          debugPrint('✗ Error loading image: $error - hiding image widget');
+          // Hide the image completely if it fails to load
+          return const SizedBox.shrink();
+        },
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          // Show loading indicator
+          return Container(
+            height: 200,
+            alignment: Alignment.center,
+            child: CircularProgressIndicator(
+              value: loadingProgress.expectedTotalBytes != null
+                  ? loadingProgress.cumulativeBytesLoaded /
+                      loadingProgress.expectedTotalBytes!
+                  : null,
+              color: AppColors.tealAccent,
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  String _formatDuration(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    final minutes = twoDigits(duration.inMinutes.remainder(60));
+    final seconds = twoDigits(duration.inSeconds.remainder(60));
+    return '$minutes:$seconds';
   }
 }
 

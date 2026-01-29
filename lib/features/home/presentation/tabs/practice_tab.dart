@@ -3,6 +3,9 @@ import '../../../../core/theme/app_colors.dart';
 import '../../data/services/history_service.dart';
 import '../../data/services/practice_stats_service.dart';
 import '../screens/vocabulary_practice_screen.dart';
+import '../screens/grammar_practice_screen.dart';
+import '../screens/reading_practice_screen.dart';
+import '../screens/listening_practice_screen.dart';
 
 class PracticeTab extends StatefulWidget {
   final String languageCode;
@@ -269,6 +272,18 @@ class _PracticeTabState extends State<PracticeTab> {
                               ? '$grammarCount Questions'
                               : 'Loading...',
                             isDark: isDark,
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => GrammarPracticeScreen(
+                                    languageCode: widget.languageCode,
+                                    token: widget.token,
+                                    userLevel: userLevel,
+                                  ),
+                                ),
+                              );
+                            },
                           ),
                           _buildPracticeCard(
                             context,
@@ -278,6 +293,18 @@ class _PracticeTabState extends State<PracticeTab> {
                               ? '$listeningCount Questions'
                               : 'Loading...',
                             isDark: isDark,
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ListeningPracticeScreen(
+                                    languageCode: widget.languageCode,
+                                    token: widget.token,
+                                    userLevel: userLevel,
+                                  ),
+                                ),
+                              );
+                            },
                           ),
                           _buildPracticeCard(
                             context,
@@ -287,6 +314,18 @@ class _PracticeTabState extends State<PracticeTab> {
                               ? '$readingCount Questions'
                               : 'Loading...',
                             isDark: isDark,
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ReadingPracticeScreen(
+                                    languageCode: widget.languageCode,
+                                    token: widget.token,
+                                    userLevel: userLevel,
+                                  ),
+                                ),
+                              );
+                            },
                           ),
                         ],
                       ),
