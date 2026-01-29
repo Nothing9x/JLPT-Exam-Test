@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../data/services/history_service.dart';
+import '../../data/services/practice_stats_service.dart';
+import '../screens/vocabulary_practice_screen.dart';
 
 class PracticeTab extends StatefulWidget {
   final String languageCode;
@@ -20,24 +22,28 @@ class PracticeTab extends StatefulWidget {
 
 class _PracticeTabState extends State<PracticeTab> {
   late HistoryService _historyService;
-  late Future<(HistoryModel?, List<SavedItem>)> _dataFuture;
+  late PracticeStatsService _practiceStatsService;
+  late Future<(HistoryModel?, List<SavedItem>, Map<String, PracticeCategory>)> _dataFuture;
 
   @override
   void initState() {
     super.initState();
     _historyService = HistoryService(token: widget.token ?? '');
+    _practiceStatsService = PracticeStatsService();
     _dataFuture = _fetchData();
   }
 
-  Future<(HistoryModel?, List<SavedItem>)> _fetchData() async {
+  Future<(HistoryModel?, List<SavedItem>, Map<String, PracticeCategory>)> _fetchData() async {
     final history = await _historyService.getRecentHistory();
     final saved = await _historyService.getSavedItems();
-    return (history, saved);
+    final practiceStats = await _practiceStatsService.getPracticeStats();
+    return (history, saved, practiceStats);
   }
 
   @override
   void dispose() {
     _historyService.dispose();
+    _practiceStatsService.dispose();
     super.dispose();
   }
   @override
@@ -209,46 +215,83 @@ class _PracticeTabState extends State<PracticeTab> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: GridView.count(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    crossAxisCount: 2,
-                    mainAxisSpacing: 16,
-                    crossAxisSpacing: 16,
-                    childAspectRatio: 1,
-                    children: [
-                      _buildPracticeCard(
-                        context,
-                        icon: Icons.menu_book,
-                        title: 'Vocabulary',
-                        subtitle: '1,240 Words',
-                        isDark: isDark,
+                // Practice Stats Grid
+                FutureBuilder<(HistoryModel?, List<SavedItem>, Map<String, PracticeCategory>)>(
+                  future: _dataFuture,
+                  builder: (context, snapshot) {
+                    final practiceStats = snapshot.data?.$3 ?? {};
+
+                    // Assume user level is N3 (level 3) for now
+                    // TODO: Get actual user level from profile
+                    const userLevel = 3;
+
+                    final vocabularyCount = practiceStats['VOCABULARY']?.questionsByLevel[userLevel] ?? 0;
+                    final grammarCount = practiceStats['GRAMMAR']?.questionsByLevel[userLevel] ?? 0;
+                    final listeningCount = practiceStats['LISTENING']?.questionsByLevel[userLevel] ?? 0;
+                    final readingCount = practiceStats['READING']?.questionsByLevel[userLevel] ?? 0;
+
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: GridView.count(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        crossAxisCount: 2,
+                        mainAxisSpacing: 16,
+                        crossAxisSpacing: 16,
+                        childAspectRatio: 1,
+                        children: [
+                          _buildPracticeCard(
+                            context,
+                            icon: Icons.menu_book,
+                            title: 'Vocabulary',
+                            subtitle: vocabularyCount > 0
+                              ? '$vocabularyCount Questions'
+                              : 'Loading...',
+                            isDark: isDark,
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => VocabularyPracticeScreen(
+                                    languageCode: widget.languageCode,
+                                    token: widget.token,
+                                    userLevel: userLevel,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                          _buildPracticeCard(
+                            context,
+                            icon: Icons.edit,
+                            title: 'Grammar',
+                            subtitle: grammarCount > 0
+                              ? '$grammarCount Questions'
+                              : 'Loading...',
+                            isDark: isDark,
+                          ),
+                          _buildPracticeCard(
+                            context,
+                            icon: Icons.headphones,
+                            title: 'Listening',
+                            subtitle: listeningCount > 0
+                              ? '$listeningCount Questions'
+                              : 'Loading...',
+                            isDark: isDark,
+                          ),
+                          _buildPracticeCard(
+                            context,
+                            icon: Icons.article,
+                            title: 'Reading',
+                            subtitle: readingCount > 0
+                              ? '$readingCount Questions'
+                              : 'Loading...',
+                            isDark: isDark,
+                          ),
+                        ],
                       ),
-                      _buildPracticeCard(
-                        context,
-                        icon: Icons.edit,
-                        title: 'Grammar',
-                        subtitle: '142 Patterns',
-                        isDark: isDark,
-                      ),
-                      _buildPracticeCard(
-                        context,
-                        icon: Icons.headphones,
-                        title: 'Listening',
-                        subtitle: '45 Hours',
-                        isDark: isDark,
-                      ),
-                      _buildPracticeCard(
-                        context,
-                        icon: Icons.article,
-                        title: 'Reading',
-                        subtitle: '50 Articles',
-                        isDark: isDark,
-                      ),
-                    ],
-                  ),
+                    );
+                  },
                 ),
                 const SizedBox(height: 24),
                 // Exam Prep Section
@@ -302,7 +345,7 @@ class _PracticeTabState extends State<PracticeTab> {
                 ),
                 const SizedBox(height: 32),
                 // History Section
-                FutureBuilder<(HistoryModel?, List<SavedItem>)>(
+                FutureBuilder<(HistoryModel?, List<SavedItem>, Map<String, PracticeCategory>)>(
                   future: _dataFuture,
                   builder: (context, snapshot) {
                     if (snapshot.hasData && snapshot.data!.$1 != null) {
@@ -421,7 +464,7 @@ class _PracticeTabState extends State<PracticeTab> {
                   },
                 ),
                 // Saved Section
-                FutureBuilder<(HistoryModel?, List<SavedItem>)>(
+                FutureBuilder<(HistoryModel?, List<SavedItem>, Map<String, PracticeCategory>)>(
                   future: _dataFuture,
                   builder: (context, snapshot) {
                     if (snapshot.hasData && snapshot.data!.$2.isNotEmpty) {
@@ -480,9 +523,10 @@ class _PracticeTabState extends State<PracticeTab> {
     required String title,
     required String subtitle,
     required bool isDark,
+    VoidCallback? onTap,
   }) {
     return GestureDetector(
-      onTap: () {
+      onTap: onTap ?? () {
         // TODO: Navigate to practice questions
       },
       child: Container(

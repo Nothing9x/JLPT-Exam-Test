@@ -687,6 +687,124 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 ---
 
+### 4.5 Delete Exam Result
+**DELETE** `/history/exams/{result_id}`
+
+Delete a specific exam result from history.
+
+**Headers**:
+```
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+**Path Parameters**:
+- `result_id`: The exam result ID
+
+**Example Request**:
+```
+DELETE /history/exams/123
+```
+
+**Response** `200 OK`:
+```json
+{
+  "message": "Exam result deleted successfully"
+}
+```
+
+**Error Responses**:
+- `400 Bad Request`: Result not found or access denied
+
+---
+
+### 4.6 Get Practice History List
+**GET** `/history/practice`
+
+Get all practice history items for the user.
+
+**Headers**:
+```
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+**Response** `200 OK`:
+```json
+[
+  {
+    "id": 1,
+    "questionId": 14838,
+    "question": "彼女は<u>色盲</u>になった。",
+    "answers": ["しきかん", "いろがた", "しきもう", "いろかた"],
+    "userAnswer": 2,
+    "correctAnswer": 2,
+    "isCorrect": true,
+    "practiceType": "kanji",
+    "level": 3,
+    "createdAt": "2026-01-08T12:00:00"
+  },
+  {
+    "id": 2,
+    "questionId": 14839,
+    "question": "この問題は<u>難解</u>です。",
+    "answers": ["なんかい", "なんげ", "なんけ", "なんげい"],
+    "userAnswer": 1,
+    "correctAnswer": 0,
+    "isCorrect": false,
+    "practiceType": "kanji",
+    "level": 3,
+    "createdAt": "2026-01-08T11:30:00"
+  }
+]
+```
+
+---
+
+### 4.7 Delete Practice History Item
+**DELETE** `/history/practice/{history_id}`
+
+Delete a specific practice history item.
+
+**Headers**:
+```
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+**Path Parameters**:
+- `history_id`: The practice history ID
+
+**Example Request**:
+```
+DELETE /history/practice/1
+```
+
+**Response** `200 OK`:
+```json
+{
+  "message": "Practice history deleted successfully"
+}
+```
+
+---
+
+### 4.8 Clear All Practice History
+**DELETE** `/history/practice`
+
+Delete all practice history for the user.
+
+**Headers**:
+```
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+**Response** `200 OK`:
+```json
+{
+  "message": "All practice history cleared successfully"
+}
+```
+
+---
+
 ## 5. Bookmarks APIs
 
 ### 5.1 Save Question Bookmark
@@ -923,6 +1041,125 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 ---
 
+### 5.10 Save Exam Bookmark
+**POST** `/bookmarks/exams`
+
+Bookmark an exam for later.
+
+**Headers**:
+```
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+**Request Body**:
+```json
+{
+  "examId": 739,
+  "note": "Need to practice this exam again"
+}
+```
+
+**Response** `200 OK`:
+```json
+{
+  "message": "Exam bookmarked successfully"
+}
+```
+
+**Error Responses**:
+- `400 Bad Request`: Exam already bookmarked or not found
+
+---
+
+### 5.11 Get Exam Bookmarks
+**GET** `/bookmarks/exams`
+
+Get all bookmarked exams.
+
+**Headers**:
+```
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+**Response** `200 OK`:
+```json
+[
+  {
+    "id": 1,
+    "examId": 739,
+    "title": "Test 1",
+    "level": 5,
+    "time": 90,
+    "score": 180,
+    "passScore": 80,
+    "note": "Need to practice this exam again",
+    "createdAt": "2026-01-08T12:00:00"
+  },
+  {
+    "id": 2,
+    "examId": 740,
+    "title": "Test 2",
+    "level": 5,
+    "time": 90,
+    "score": 180,
+    "passScore": 80,
+    "note": null,
+    "createdAt": "2026-01-07T10:00:00"
+  }
+]
+```
+
+---
+
+### 5.12 Check Exam Bookmark Status
+**GET** `/bookmarks/exams/{exam_id}/status`
+
+Check if a specific exam is bookmarked.
+
+**Headers**:
+```
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+**Path Parameters**:
+- `exam_id`: The exam ID
+
+**Example Request**:
+```
+GET /bookmarks/exams/739/status
+```
+
+**Response** `200 OK`:
+```json
+{
+  "bookmarked": true
+}
+```
+
+---
+
+### 5.13 Delete Exam Bookmark
+**DELETE** `/bookmarks/exams/{exam_id}`
+
+Remove an exam from bookmarks.
+
+**Headers**:
+```
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+**Path Parameters**:
+- `exam_id`: The exam ID
+
+**Response** `200 OK`:
+```json
+{
+  "message": "Bookmark deleted successfully"
+}
+```
+
+---
+
 ## 6. Premium & Billing APIs
 
 ### 6.1 Get Billing Packages
@@ -1077,6 +1314,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 - GET `/exams` (list)
 - GET `/exams/{id}` (detail)
 - GET `/data/**` (media files)
+- GET `/reports/types`
 
 **Protected APIs** (authentication required):
 - GET `/user/profile`
@@ -1086,7 +1324,11 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 - POST `/exams/submit`
 - GET `/history/exams`
 - GET `/history/exams/{result_id}`
+- DELETE `/history/exams/{result_id}`
 - POST `/history/practice`
+- GET `/history/practice`
+- DELETE `/history/practice/{history_id}`
+- DELETE `/history/practice`
 - GET `/history/summary`
 - POST `/bookmarks/questions`
 - GET `/bookmarks/questions`
@@ -1097,7 +1339,12 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 - POST `/bookmarks/grammar`
 - GET `/bookmarks/grammar`
 - DELETE `/bookmarks/grammar/{bookmark_id}`
+- POST `/bookmarks/exams`
+- GET `/bookmarks/exams`
+- GET `/bookmarks/exams/{exam_id}/status`
+- DELETE `/bookmarks/exams/{exam_id}`
 - GET `/mytest/config`
+- GET `/mytest/types`
 - GET `/mytest/questions`
 - POST `/mytest/generate`
 - GET `/mytest/questions/{id}/answer`
@@ -1106,6 +1353,8 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 - GET `/external-exams/level/{level}`
 - GET `/external-exams/type/{type}`
 - GET `/external-exams/statistics`
+- POST `/reports/questions`
+- GET `/reports/questions`
 
 ---
 
@@ -1217,7 +1466,327 @@ GET /mytest/config?level=3
 
 ---
 
-### 7.2 Get My Test Questions
+### 7.2 Get Question Type Statistics
+**GET** `/mytest/types`
+
+Lấy thống kê tất cả các loại câu hỏi cùng số lượng câu hỏi theo từng level. API này không yêu cầu chỉ định level - trả về tất cả types cho tất cả levels.
+
+**Example Request**:
+```
+GET /mytest/types
+```
+
+**Response** `200 OK`:
+```json
+{
+  "totalQuestions": 29493,
+  "categories": [
+    {
+      "category": "VOCABULARY",
+      "totalQuestions": 10500,
+      "types": [
+        {
+          "typeId": 1,
+          "key": "Cách đọc kanji",
+          "name": "Cách đọc kanji",
+          "totalQuestions": 2100,
+          "byLevel": {
+            "1": 420,
+            "2": 400,
+            "3": 450,
+            "4": 430,
+            "5": 400
+          }
+        },
+        {
+          "typeId": 2,
+          "key": "Thay đổi cách nói",
+          "name": "Đồng nghĩa",
+          "totalQuestions": 1800,
+          "byLevel": {
+            "1": 360,
+            "2": 350,
+            "3": 380,
+            "4": 360,
+            "5": 350
+          }
+        },
+        {
+          "typeId": 3,
+          "key": "Điền từ theo văn cảnh",
+          "name": "Biểu hiện từ",
+          "totalQuestions": 1600,
+          "byLevel": {
+            "1": 320,
+            "2": 310,
+            "3": 340,
+            "4": 330,
+            "5": 300
+          }
+        },
+        {
+          "typeId": 4,
+          "key": "Ứng dụng từ",
+          "name": "Cách dùng từ",
+          "totalQuestions": 1500,
+          "byLevel": {
+            "1": 300,
+            "2": 290,
+            "3": 320,
+            "4": 300,
+            "5": 290
+          }
+        },
+        {
+          "typeId": 5,
+          "key": "Cách viết từ",
+          "name": "Cách đọc Hiragana",
+          "totalQuestions": 2000,
+          "byLevel": {
+            "1": 400,
+            "2": 380,
+            "3": 420,
+            "4": 410,
+            "5": 390
+          }
+        },
+        {
+          "typeId": 6,
+          "key": "Hình thành từ",
+          "name": "Cấu tạo từ",
+          "totalQuestions": 1500,
+          "byLevel": {
+            "1": 300,
+            "2": 290,
+            "3": 320,
+            "4": 300,
+            "5": 290
+          }
+        }
+      ]
+    },
+    {
+      "category": "GRAMMAR",
+      "totalQuestions": 6000,
+      "types": [
+        {
+          "typeId": 7,
+          "key": "Lựa chọn ngữ pháp",
+          "name": "Dạng ngữ pháp",
+          "totalQuestions": 2500,
+          "byLevel": {
+            "1": 500,
+            "2": 480,
+            "3": 520,
+            "4": 510,
+            "5": 490
+          }
+        },
+        {
+          "typeId": 8,
+          "key": "Lắp ghép câu",
+          "name": "Thành lập câu",
+          "totalQuestions": 2000,
+          "byLevel": {
+            "1": 400,
+            "2": 380,
+            "3": 420,
+            "4": 410,
+            "5": 390
+          }
+        },
+        {
+          "typeId": 9,
+          "key": "Ngữ pháp theo đoạn văn",
+          "name": "Ngữ pháp theo đoạn văn",
+          "totalQuestions": 1500,
+          "byLevel": {
+            "1": 300,
+            "2": 290,
+            "3": 320,
+            "4": 300,
+            "5": 290
+          }
+        }
+      ]
+    },
+    {
+      "category": "READING",
+      "totalQuestions": 7500,
+      "types": [
+        {
+          "typeId": 10,
+          "key": "Đoạn văn ngắn",
+          "name": "Đoạn văn ngắn",
+          "totalQuestions": 1500,
+          "byLevel": {
+            "1": 300,
+            "2": 290,
+            "3": 320,
+            "4": 300,
+            "5": 290
+          }
+        },
+        {
+          "typeId": 11,
+          "key": "Đoạn văn vừa",
+          "name": "Đoạn văn trung bình",
+          "totalQuestions": 1400,
+          "byLevel": {
+            "1": 280,
+            "2": 270,
+            "3": 300,
+            "4": 280,
+            "5": 270
+          }
+        },
+        {
+          "typeId": 12,
+          "key": "Đoạn văn dài",
+          "name": "Đoạn văn dài",
+          "totalQuestions": 1200,
+          "byLevel": {
+            "1": 240,
+            "2": 230,
+            "3": 260,
+            "4": 240,
+            "5": 230
+          }
+        },
+        {
+          "typeId": 13,
+          "key": "Đọc hiểu tổng hợp",
+          "name": "Đọc hiểu tổng hợp",
+          "totalQuestions": 1100,
+          "byLevel": {
+            "1": 220,
+            "2": 210,
+            "3": 240,
+            "4": 220,
+            "5": 210
+          }
+        },
+        {
+          "typeId": 14,
+          "key": "Đọc hiểu chủ đề",
+          "name": "Đọc hiểu chủ đề",
+          "totalQuestions": 1200,
+          "byLevel": {
+            "1": 240,
+            "2": 230,
+            "3": 260,
+            "4": 240,
+            "5": 230
+          }
+        },
+        {
+          "typeId": 15,
+          "key": "Tìm thông tin",
+          "name": "Tìm thông tin",
+          "totalQuestions": 1100,
+          "byLevel": {
+            "1": 220,
+            "2": 210,
+            "3": 240,
+            "4": 220,
+            "5": 210
+          }
+        }
+      ]
+    },
+    {
+      "category": "LISTENING",
+      "totalQuestions": 5493,
+      "types": [
+        {
+          "typeId": 16,
+          "key": "Nghe hiểu chủ đề",
+          "name": "Nghe hiểu chủ đề",
+          "totalQuestions": 1000,
+          "byLevel": {
+            "1": 200,
+            "2": 190,
+            "3": 220,
+            "4": 200,
+            "5": 190
+          }
+        },
+        {
+          "typeId": 17,
+          "key": "Nghe hiểu điểm chính",
+          "name": "Nghe hiểu điểm chính",
+          "totalQuestions": 950,
+          "byLevel": {
+            "1": 190,
+            "2": 180,
+            "3": 200,
+            "4": 190,
+            "5": 190
+          }
+        },
+        {
+          "typeId": 18,
+          "key": "Nghe hiểu khái quát",
+          "name": "Nghe hiểu khái quát",
+          "totalQuestions": 900,
+          "byLevel": {
+            "1": 180,
+            "2": 170,
+            "3": 200,
+            "4": 180,
+            "5": 170
+          }
+        },
+        {
+          "typeId": 19,
+          "key": "Trả lời nhanh",
+          "name": "Trả lời nhanh",
+          "totalQuestions": 850,
+          "byLevel": {
+            "1": 170,
+            "2": 160,
+            "3": 180,
+            "4": 170,
+            "5": 170
+          }
+        },
+        {
+          "typeId": 20,
+          "key": "Nghe hiểu tổng hợp",
+          "name": "Nghe hiểu tổng hợp",
+          "totalQuestions": 900,
+          "byLevel": {
+            "1": 180,
+            "2": 170,
+            "3": 200,
+            "4": 180,
+            "5": 170
+          }
+        },
+        {
+          "typeId": 21,
+          "key": "Nghe hiểu diễn đạt",
+          "name": "Nghe hiểu diễn đạt",
+          "totalQuestions": 893,
+          "byLevel": {
+            "1": 178,
+            "2": 170,
+            "3": 195,
+            "4": 180,
+            "5": 170
+          }
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Note**: Số liệu trong response trên là ví dụ minh họa. Số thực tế sẽ phụ thuộc vào dữ liệu trong database.
+
+---
+
+### 7.3 Get My Test Questions
 **GET** `/mytest/questions?level={level}&category={category}&typeId={typeId}&limit={limit}`
 
 Lấy các câu hỏi ngẫu nhiên theo category và type.
@@ -1277,7 +1846,7 @@ GET /mytest/questions?level=3&category=VOCABULARY&typeId=1&limit=10
 
 ---
 
-### 7.3 Generate Custom Test
+### 7.4 Generate Custom Test
 **POST** `/mytest/generate`
 
 Tạo một đề thi tùy chỉnh với các loại câu hỏi và số lượng cụ thể.
@@ -1372,7 +1941,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 ---
 
-### 7.4 Get Question Answer
+### 7.5 Get Question Answer
 **GET** `/mytest/questions/{id}/answer`
 
 Lấy đáp án và giải thích cho một câu hỏi cụ thể.
@@ -1416,7 +1985,7 @@ GET /mytest/questions/12345/answer
 
 ---
 
-### 7.5 Question Type Reference
+### 7.6 Question Type Reference
 
 | Type ID | Category | Key | Name |
 |---------|----------|-----|------|
@@ -1605,7 +2174,48 @@ GET /external-exams/type/4?level=2
 
 ---
 
-### 8.6 Get Statistics
+### 8.6 Get Exam Detail by External ID
+**GET** `/external-exams/detail/{externalId}`
+
+Lấy thông tin chi tiết đề thi theo External ID (ID từ eupgroup API).
+
+**Path Parameters**:
+- `externalId`: ID từ nguồn bên ngoài (eupgroup)
+
+**Example Request**:
+```
+GET /external-exams/detail/739
+```
+
+**Response** `200 OK`:
+```json
+{
+  "id": 267,
+  "externalId": 739,
+  "title": "Test 1",
+  "level": 5,
+  "levelName": "N5",
+  "examType": 0,
+  "examTypeName": "Full Test",
+  "examTypeNameVn": "Đề thi đầy đủ",
+  "time": 90,
+  "score": 180,
+  "passScore": 80
+}
+```
+
+**Response** `404 Not Found`:
+```json
+{
+  "error": "Exam not found"
+}
+```
+
+**Note**: Sử dụng endpoint này khi cần query đề thi bằng externalId (ID từ catalog JSON hoặc eupgroup API).
+
+---
+
+### 8.7 Get Statistics
 **GET** `/external-exams/statistics`
 
 Lấy thống kê số lượng đề thi.
@@ -1640,10 +2250,10 @@ GET /external-exams/statistics
 
 ---
 
-### 8.7 Admin: Sync from External API
+### 8.8 Admin: Sync from External API
 **POST** `/external-exams/admin/sync`
 
-Đồng bộ dữ liệu đề thi từ API bên ngoài (eupgroup).
+Đồng bộ dữ liệu đề thi từ API bên ngoài (eupgroup). Chỉ thêm các đề thi mới, không xóa dữ liệu cũ.
 
 **Example Request**:
 ```
@@ -1662,7 +2272,7 @@ POST /external-exams/admin/sync
 
 ---
 
-### 8.8 Admin: Export to JSON
+### 8.9 Admin: Export to JSON
 **POST** `/external-exams/admin/export?filePath={filePath}`
 
 Export catalog ra file JSON cho app local.
@@ -1685,6 +2295,32 @@ POST /external-exams/admin/export
 
 ---
 
+### 8.10 Admin: Reset and Re-sync
+**POST** `/external-exams/admin/reset`
+
+Xóa toàn bộ dữ liệu đề thi và đồng bộ lại từ đầu từ API bên ngoài (eupgroup).
+
+**Example Request**:
+```
+POST /external-exams/admin/reset
+```
+
+**Response** `200 OK`:
+```json
+{
+  "totalFetched": 339,
+  "totalInserted": 339,
+  "totalSkipped": 0,
+  "errors": []
+}
+```
+
+**Note**:
+- Endpoint này sẽ xóa TOÀN BỘ dữ liệu trong bảng `external_exams` trước khi đồng bộ lại.
+- Sử dụng khi cần reset lại database để mapping đúng với externalId.
+
+---
+
 ## Media Files
 
 Audio and image files can be accessed via:
@@ -1700,3 +2336,137 @@ https://8e23deb9e9e2.ngrok-free.app/data/audio/26/23526_092020_audio_N3_NHCD_q94
 ```
 
 The file paths are included in the API responses (e.g., in exam questions).
+
+---
+
+## 9. Report APIs
+
+API để user report lỗi câu hỏi (đáp án sai, lỗi audio, typo, v.v.)
+
+### 9.1 Report Types Reference
+
+| Type | Display Name | Description |
+|------|--------------|-------------|
+| `wrong_answer` | Wrong Answer | Đáp án không chính xác |
+| `audio_quality` | Audio Quality | Chất lượng audio kém, không nghe được |
+| `typo` | Typo | Lỗi chính tả trong câu hỏi hoặc đáp án |
+| `technical` | Technical Issue | Lỗi kỹ thuật (audio không load, ảnh không hiển thị) |
+| `confusing` | Confusing Question | Câu hỏi khó hiểu, mơ hồ |
+| `other` | Other | Lỗi khác |
+
+---
+
+### 9.2 Get Report Types
+**GET** `/reports/types`
+
+Lấy danh sách các loại report có sẵn.
+
+**Example Request**:
+```
+GET /reports/types
+```
+
+**Response** `200 OK`:
+```json
+{
+  "types": [
+    {"value": "wrong_answer", "name": "Wrong Answer"},
+    {"value": "audio_quality", "name": "Audio Quality"},
+    {"value": "typo", "name": "Typo"},
+    {"value": "technical", "name": "Technical Issue"},
+    {"value": "confusing", "name": "Confusing Question"},
+    {"value": "other", "name": "Other"}
+  ]
+}
+```
+
+**Note**: API này không yêu cầu authentication.
+
+---
+
+### 9.3 Submit Question Report
+**POST** `/reports/questions`
+
+Report một câu hỏi có lỗi.
+
+**Headers**:
+```
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+**Request Body**:
+```json
+{
+  "questionId": 14838,
+  "reportType": "wrong_answer",
+  "description": "Đáp án đúng là しきもう nhưng app hiển thị đáp án là いろがた"
+}
+```
+
+**Fields**:
+- `questionId` (required): ID của câu hỏi cần report
+- `reportType` (required): Loại report (xem bảng Report Types Reference)
+- `description` (optional): Mô tả chi tiết về lỗi
+
+**Response** `201 Created`:
+```json
+{
+  "id": 1,
+  "questionId": 14838,
+  "reportType": "wrong_answer",
+  "reportTypeName": "Wrong Answer",
+  "description": "Đáp án đúng là しきもう nhưng app hiển thị đáp án là いろがた",
+  "status": "pending",
+  "createdAt": "2026-01-29T10:30:00"
+}
+```
+
+**Error Responses**:
+- `400 Bad Request`: Invalid report type or question not found
+- `401 Unauthorized`: Missing or invalid token
+
+---
+
+### 9.4 Get User Reports
+**GET** `/reports/questions`
+
+Lấy danh sách các report đã gửi của user hiện tại.
+
+**Headers**:
+```
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+**Response** `200 OK`:
+```json
+[
+  {
+    "id": 1,
+    "questionId": 14838,
+    "reportType": "wrong_answer",
+    "reportTypeName": "Wrong Answer",
+    "description": "Đáp án đúng là しきもう nhưng app hiển thị đáp án là いろがた",
+    "status": "pending",
+    "createdAt": "2026-01-29T10:30:00"
+  },
+  {
+    "id": 2,
+    "questionId": 15000,
+    "reportType": "audio_quality",
+    "reportTypeName": "Audio Quality",
+    "description": "Audio bị nhiễu, không nghe rõ",
+    "status": "reviewed",
+    "createdAt": "2026-01-28T14:00:00"
+  }
+]
+```
+
+**Report Status**:
+| Status | Description |
+|--------|-------------|
+| `pending` | Report mới, chưa được xem xét |
+| `reviewed` | Đã được admin xem xét |
+| `resolved` | Lỗi đã được sửa |
+| `rejected` | Report bị từ chối (không phải lỗi) |
+
+---
