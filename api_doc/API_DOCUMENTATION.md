@@ -1315,6 +1315,16 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 - GET `/exams/{id}` (detail)
 - GET `/data/**` (media files)
 - GET `/reports/types`
+- GET `/download/catalog`
+- GET `/download/exams/level/{level}`
+- GET `/download/exams/level/{level}/media`
+- GET `/download/questions/category/{category}`
+- GET `/download/questions/category/{category}/media`
+- GET `/download/zip/catalog`
+- GET `/download/zip/exams/level/{level}`
+- GET `/download/zip/exams/level/{level}/info`
+- GET `/download/zip/questions/category/{category}`
+- GET `/download/zip/questions/category/{category}/info`
 
 **Protected APIs** (authentication required):
 - GET `/user/profile`
@@ -2468,5 +2478,828 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 | `reviewed` | Đã được admin xem xét |
 | `resolved` | Lỗi đã được sửa |
 | `rejected` | Report bị từ chối (không phải lỗi) |
+
+---
+
+## 10. Download APIs (Offline Data)
+
+API để mobile app download trọn bộ dữ liệu cho offline usage.
+
+### 10.1 Get Download Catalog
+**GET** `/download/catalog`
+
+Lấy danh sách các gói download có sẵn với metadata.
+
+**Example Request**:
+```
+GET /download/catalog
+```
+
+**Response** `200 OK`:
+```json
+{
+  "version": "1.0",
+  "generatedAt": "2026-02-03T10:00:00",
+  "examPacks": [
+    {
+      "level": 1,
+      "levelName": "N1",
+      "examCount": 15,
+      "questionCount": 2500,
+      "downloadUrl": "https://example.com/api/download/exams/level/1"
+    },
+    {
+      "level": 2,
+      "levelName": "N2",
+      "examCount": 15,
+      "questionCount": 2400,
+      "downloadUrl": "https://example.com/api/download/exams/level/2"
+    }
+  ],
+  "questionPacks": [
+    {
+      "category": "VOCABULARY",
+      "level": null,
+      "levelName": null,
+      "questionCount": 10500,
+      "typeCount": 6,
+      "downloadUrl": "https://example.com/api/download/questions/category/VOCABULARY"
+    },
+    {
+      "category": "VOCABULARY",
+      "level": 3,
+      "levelName": "N3",
+      "questionCount": 2100,
+      "typeCount": 6,
+      "downloadUrl": "https://example.com/api/download/questions/category/VOCABULARY?level=3"
+    }
+  ]
+}
+```
+
+---
+
+### 10.2 Download Exams by Level
+**GET** `/download/exams/level/{level}`
+
+Download trọn bộ đề thi theo level. Response có thể lớn (vài MB), được format là JSON để mobile dễ parse và lưu offline.
+
+**Path Parameters**:
+- `level`: JLPT level (1-5 for N1-N5)
+
+**Example Request**:
+```
+GET /download/exams/level/3
+```
+
+**Response** `200 OK` (Content-Disposition: attachment):
+```json
+{
+  "version": "1.0",
+  "generatedAt": "2026-02-03T10:00:00",
+  "level": 3,
+  "levelName": "N3",
+  "totalExams": 15,
+  "totalQuestions": 1800,
+  "exams": [
+    {
+      "id": 26,
+      "title": "Test 1",
+      "time": 140,
+      "score": 180,
+      "passScore": 95,
+      "parts": [
+        {
+          "id": 1,
+          "name": "文字・語彙",
+          "time": 30,
+          "minScore": 19,
+          "maxScore": 60,
+          "sections": [
+            {
+              "id": 1,
+              "kind": "cách đọc kanji",
+              "questionGroups": [
+                {
+                  "id": 1,
+                  "title": "問題＿＿＿の読み方として...",
+                  "audio": null,
+                  "image": null,
+                  "txtRead": null,
+                  "questions": [
+                    {
+                      "id": 14838,
+                      "question": "彼女は<u>色盲</u>になった。",
+                      "answers": ["しきかん", "いろがた", "しきもう", "いろかた"],
+                      "correctAnswer": 2,
+                      "image": null,
+                      "explain": "色盲（しきもう）...",
+                      "explainEn": "Color blindness...",
+                      "explainVn": "Mù màu là...",
+                      "explainCn": "色盲是..."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Response Headers**:
+```
+Content-Type: application/json
+Content-Disposition: attachment; filename="exams_n3.json"
+```
+
+---
+
+### 10.3 Download Questions by Category
+**GET** `/download/questions/category/{category}?level={level}`
+
+Download trọn bộ câu hỏi theo category (và optionally theo level).
+
+**Path Parameters**:
+- `category`: Category name - `VOCABULARY`, `GRAMMAR`, `READING`, `LISTENING`
+
+**Query Parameters**:
+- `level` (optional): JLPT level (1-5). Nếu không truyền, download tất cả levels.
+
+**Example Request** (all levels):
+```
+GET /download/questions/category/VOCABULARY
+```
+
+**Example Request** (specific level):
+```
+GET /download/questions/category/GRAMMAR?level=3
+```
+
+**Response** `200 OK` (Content-Disposition: attachment):
+```json
+{
+  "version": "1.0",
+  "generatedAt": "2026-02-03T10:00:00",
+  "level": 3,
+  "levelName": "N3",
+  "category": "VOCABULARY",
+  "totalQuestions": 2100,
+  "types": [
+    {
+      "typeId": 1,
+      "typeKey": "Cách đọc kanji",
+      "typeName": "Cách đọc kanji",
+      "typeLevel": 0,
+      "count": 420,
+      "questions": [
+        {
+          "id": 12345,
+          "question": "彼女は<u>色盲</u>になった。",
+          "answers": ["しきかん", "いろがた", "しきもう", "いろかた"],
+          "correctAnswer": 2,
+          "image": null,
+          "audio": null,
+          "txtRead": null,
+          "groupTitle": "問題＿＿＿の読み方として...",
+          "explain": "色盲（しきもう）...",
+          "explainEn": "Color blindness...",
+          "explainVn": "Mù màu là...",
+          "explainCn": "色盲是..."
+        }
+      ]
+    },
+    {
+      "typeId": 2,
+      "typeKey": "Thay đổi cách nói",
+      "typeName": "Đồng nghĩa",
+      "typeLevel": 0,
+      "count": 380,
+      "questions": [...]
+    }
+  ]
+}
+```
+
+**Response Headers**:
+```
+Content-Type: application/json
+Content-Disposition: attachment; filename="questions_vocabulary_n3.json"
+```
+
+---
+
+### 10.4 Get Media Files List for Exams
+**GET** `/download/exams/level/{level}/media`
+
+Lấy danh sách tất cả audio và image files cần download cho offline usage của exam pack.
+
+**Path Parameters**:
+- `level`: JLPT level (1-5 for N1-N5)
+
+**Example Request**:
+```
+GET /download/exams/level/3/media
+```
+
+**Response** `200 OK`:
+```json
+{
+  "version": "1.0",
+  "generatedAt": "2026-02-03T10:00:00",
+  "level": 3,
+  "category": null,
+  "totalFiles": 245,
+  "totalAudioFiles": 180,
+  "totalImageFiles": 65,
+  "audioFiles": [
+    "data/audio/26/23484_092020_audio_N3_NHCD_q44.mp3",
+    "data/audio/26/23485_092020_audio_N3_NHCD_q45.mp3",
+    "data/audio/26/23486_092020_audio_N3_NHCD_q46.mp3"
+  ],
+  "imageFiles": [
+    "data/images/26/23500_image_N3_q1.png",
+    "data/images/26/23501_image_N3_q2.png"
+  ]
+}
+```
+
+---
+
+### 10.5 Get Media Files List for Questions
+**GET** `/download/questions/category/{category}/media?level={level}`
+
+Lấy danh sách audio và image files cho question pack.
+
+**Path Parameters**:
+- `category`: Category name - `VOCABULARY`, `GRAMMAR`, `READING`, `LISTENING`
+
+**Query Parameters**:
+- `level` (optional): JLPT level (1-5)
+
+**Example Request**:
+```
+GET /download/questions/category/LISTENING/media?level=3
+```
+
+**Response** `200 OK`:
+```json
+{
+  "version": "1.0",
+  "generatedAt": "2026-02-03T10:00:00",
+  "level": 3,
+  "category": "LISTENING",
+  "totalFiles": 150,
+  "totalAudioFiles": 150,
+  "totalImageFiles": 0,
+  "audioFiles": [
+    "data/audio/26/listening_q1.mp3",
+    "data/audio/26/listening_q2.mp3"
+  ],
+  "imageFiles": []
+}
+```
+
+---
+
+### 10.6 Download Data Structure Summary
+
+**Exam Pack Structure**:
+```
+ExamDownloadResponse
+├── version, generatedAt, level, levelName
+├── totalExams, totalQuestions
+└── exams[]
+    ├── id, title, time, score, passScore
+    └── parts[]
+        ├── id, name, time, minScore, maxScore
+        └── sections[]
+            ├── id, kind
+            └── questionGroups[]
+                ├── id, title, audio, image, txtRead
+                └── questions[]
+                    ├── id, question, answers[], correctAnswer
+                    ├── image, explain, explainEn, explainVn, explainCn
+```
+
+**Question Pack Structure**:
+```
+QuestionPackDownloadResponse
+├── version, generatedAt, level, levelName, category
+├── totalQuestions
+└── types[]
+    ├── typeId, typeKey, typeName, typeLevel, count
+    └── questions[]
+        ├── id, question, answers[], correctAnswer
+        ├── image, audio, txtRead, groupTitle
+        ├── explain, explainEn, explainVn, explainCn
+```
+
+---
+
+### 10.7 Complete Offline Download Guide
+
+#### Step 1: Get Download Catalog
+```dart
+// Lấy danh sách các gói download có sẵn
+final catalog = await api.get('/download/catalog');
+// Hiển thị cho user chọn level/category muốn download
+```
+
+#### Step 2: Download Data JSON
+```dart
+// Download exam data cho level 3
+final examData = await api.get('/download/exams/level/3');
+// Lưu vào local storage (SQLite, Hive, etc.)
+await localDb.saveExamData(examData);
+```
+
+#### Step 3: Get Media Files List
+```dart
+// Lấy danh sách media files cần download
+final mediaList = await api.get('/download/exams/level/3/media');
+// mediaList.audioFiles = ["data/audio/26/xxx.mp3", ...]
+// mediaList.imageFiles = ["data/images/26/xxx.png", ...]
+```
+
+#### Step 4: Download Media Files
+```dart
+const baseUrl = 'https://your-server.com';
+
+// Download audio files
+for (final audioPath in mediaList.audioFiles) {
+  final url = '$baseUrl/$audioPath';  // https://your-server.com/data/audio/26/xxx.mp3
+  final bytes = await http.get(url);
+  await localStorage.saveFile(audioPath, bytes);
+}
+
+// Download image files
+for (final imagePath in mediaList.imageFiles) {
+  final url = '$baseUrl/$imagePath';
+  final bytes = await http.get(url);
+  await localStorage.saveFile(imagePath, bytes);
+}
+```
+
+#### Step 5: Use Offline Data
+```dart
+// Load exam from local storage
+final examData = await localDb.getExamData(level: 3);
+
+// When displaying question with audio:
+final audioPath = question.audio;  // "data/audio/26/xxx.mp3"
+final localAudioFile = await localStorage.getFile(audioPath);
+audioPlayer.play(localAudioFile);
+
+// When displaying image:
+final imagePath = question.image;  // "data/images/26/xxx.png"
+final localImageFile = await localStorage.getFile(imagePath);
+Image.file(localImageFile);
+```
+
+---
+
+### 10.8 URL Construction for Media Files
+
+Media file paths trong API responses là **relative paths**. Cần prepend base URL để tạo full URL:
+
+| Field Value | Full URL |
+|-------------|----------|
+| `data/audio/26/xxx.mp3` | `https://your-server.com/data/audio/26/xxx.mp3` |
+| `data/images/26/xxx.png` | `https://your-server.com/data/images/26/xxx.png` |
+
+```dart
+String buildMediaUrl(String? path) {
+  if (path == null || path.isEmpty) return '';
+  const baseUrl = 'https://your-server.com';
+  // Ensure path starts with /
+  final normalizedPath = path.startsWith('/') ? path : '/$path';
+  return '$baseUrl$normalizedPath';
+}
+```
+
+---
+
+### 10.9 Recommended Download Flow
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    OFFLINE DOWNLOAD FLOW                     │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  1. GET /download/catalog                                   │
+│     └── Show available packs to user                        │
+│                                                             │
+│  2. User selects: "Download N3 Exams"                       │
+│                                                             │
+│  3. GET /download/exams/level/3                             │
+│     └── Save JSON to local database                         │
+│                                                             │
+│  4. GET /download/exams/level/3/media                       │
+│     └── Get list of audio/image files                       │
+│                                                             │
+│  5. For each file in audioFiles + imageFiles:               │
+│     └── GET /{baseUrl}/{filePath}                           │
+│     └── Save to local storage                               │
+│     └── Update progress bar                                 │
+│                                                             │
+│  6. Mark download as complete                               │
+│     └── User can now use offline                            │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### 10.10 API Endpoints Summary
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /download/catalog` | Danh sách gói download |
+| `GET /download/exams/level/{level}` | Download JSON data đề thi |
+| `GET /download/exams/level/{level}/media` | Danh sách media files của đề thi |
+| `GET /download/questions/category/{cat}` | Download JSON câu hỏi theo category |
+| `GET /download/questions/category/{cat}/media` | Danh sách media files của câu hỏi |
+
+---
+
+## 11. ZIP Download APIs (Recommended for Mobile)
+
+API để download file ZIP chứa cả JSON data và media files. Đây là phương pháp được **khuyến nghị** cho mobile app vì:
+- **Single download**: Chỉ cần 1 request thay vì hàng trăm request riêng lẻ
+- **Compression**: File được nén, giảm dung lượng download
+- **Atomic**: Download hoàn thành hoặc thất bại, không có trạng thái partial
+- **Easy to use**: Flutter/Dart có package `archive` để giải nén dễ dàng
+
+### 11.1 Get ZIP Download Catalog
+**GET** `/download/zip/catalog`
+
+Lấy danh sách các gói ZIP download có sẵn cùng với ước tính dung lượng.
+
+**Example Request**:
+```
+GET /download/zip/catalog
+```
+
+**Response** `200 OK`:
+```json
+{
+  "version": "1.0",
+  "generatedAt": "2026-02-03T10:00:00",
+  "examZips": [
+    {
+      "level": 1,
+      "category": null,
+      "filename": "exams_n1.zip",
+      "totalExams": 15,
+      "totalQuestions": 2500,
+      "totalAudioFiles": 180,
+      "totalImageFiles": 65,
+      "estimatedSizeBytes": 52428800,
+      "estimatedSizeMB": "50.00"
+    },
+    {
+      "level": 2,
+      "category": null,
+      "filename": "exams_n2.zip",
+      "totalExams": 15,
+      "totalQuestions": 2400,
+      "totalAudioFiles": 175,
+      "totalImageFiles": 60,
+      "estimatedSizeBytes": 48000000,
+      "estimatedSizeMB": "45.78"
+    }
+  ],
+  "questionZips": [
+    {
+      "level": null,
+      "category": "VOCABULARY",
+      "filename": "questions_vocabulary_all.zip",
+      "totalExams": null,
+      "totalQuestions": 10500,
+      "totalAudioFiles": 0,
+      "totalImageFiles": 500,
+      "estimatedSizeBytes": 20000000,
+      "estimatedSizeMB": "19.07"
+    },
+    {
+      "level": 3,
+      "category": "LISTENING",
+      "filename": "questions_listening_n3.zip",
+      "totalExams": null,
+      "totalQuestions": 200,
+      "totalAudioFiles": 200,
+      "totalImageFiles": 0,
+      "estimatedSizeBytes": 15000000,
+      "estimatedSizeMB": "14.31"
+    }
+  ]
+}
+```
+
+---
+
+### 11.2 Get ZIP Info for Exams
+**GET** `/download/zip/exams/level/{level}/info`
+
+Lấy thông tin về ZIP file (dung lượng ước tính) trước khi download.
+
+**Path Parameters**:
+- `level`: JLPT level (1-5 for N1-N5)
+
+**Example Request**:
+```
+GET /download/zip/exams/level/3/info
+```
+
+**Response** `200 OK`:
+```json
+{
+  "level": 3,
+  "category": null,
+  "filename": "exams_n3.zip",
+  "totalExams": 15,
+  "totalQuestions": 1800,
+  "totalAudioFiles": 180,
+  "totalImageFiles": 65,
+  "estimatedSizeBytes": 45000000,
+  "estimatedSizeMB": "42.92"
+}
+```
+
+---
+
+### 11.3 Download ZIP for Exams
+**GET** `/download/zip/exams/level/{level}`
+
+Download file ZIP chứa toàn bộ đề thi và media files cho một level.
+
+**Path Parameters**:
+- `level`: JLPT level (1-5 for N1-N5)
+
+**Example Request**:
+```
+GET /download/zip/exams/level/3
+```
+
+**Response** `200 OK` (Binary ZIP file):
+```
+Content-Type: application/zip
+Content-Disposition: attachment; filename="exams_n3.zip"
+Content-Length: 45000000
+```
+
+**ZIP File Structure**:
+```
+exams_n3.zip
+├── exams_n3.json          # Full exam data with all questions
+├── manifest.json          # Metadata about the ZIP contents
+├── audio/
+│   ├── 23484_092020_audio_N3_NHCD_q44.mp3
+│   ├── 23485_092020_audio_N3_NHCD_q45.mp3
+│   └── ...
+└── images/
+    ├── 23500_image_N3_q1.png
+    ├── 23501_image_N3_q2.png
+    └── ...
+```
+
+**manifest.json**:
+```json
+{
+  "version": "1.0",
+  "type": "exam_pack",
+  "level": 3,
+  "category": null,
+  "totalExams": 15,
+  "totalQuestions": 1800,
+  "totalAudioFiles": 180,
+  "totalImageFiles": 65,
+  "includedAudioFiles": 180,
+  "includedImageFiles": 65
+}
+```
+
+---
+
+### 11.4 Get ZIP Info for Questions
+**GET** `/download/zip/questions/category/{category}/info?level={level}`
+
+Lấy thông tin về ZIP file của question pack.
+
+**Path Parameters**:
+- `category`: Category name - `VOCABULARY`, `GRAMMAR`, `READING`, `LISTENING`
+
+**Query Parameters**:
+- `level` (optional): JLPT level (1-5)
+
+**Example Request**:
+```
+GET /download/zip/questions/category/LISTENING/info?level=3
+```
+
+**Response** `200 OK`:
+```json
+{
+  "level": 3,
+  "category": "LISTENING",
+  "filename": "questions_listening_n3.zip",
+  "totalExams": null,
+  "totalQuestions": 200,
+  "totalAudioFiles": 200,
+  "totalImageFiles": 0,
+  "estimatedSizeBytes": 15000000,
+  "estimatedSizeMB": "14.31"
+}
+```
+
+---
+
+### 11.5 Download ZIP for Questions
+**GET** `/download/zip/questions/category/{category}?level={level}`
+
+Download file ZIP chứa câu hỏi và media files theo category.
+
+**Path Parameters**:
+- `category`: Category name - `VOCABULARY`, `GRAMMAR`, `READING`, `LISTENING`
+
+**Query Parameters**:
+- `level` (optional): JLPT level (1-5). Nếu không truyền, download tất cả levels.
+
+**Example Request**:
+```
+GET /download/zip/questions/category/LISTENING?level=3
+```
+
+**Response** `200 OK` (Binary ZIP file):
+```
+Content-Type: application/zip
+Content-Disposition: attachment; filename="questions_listening_n3.zip"
+Content-Length: 15000000
+```
+
+**ZIP File Structure**:
+```
+questions_listening_n3.zip
+├── questions_listening_n3.json    # Question data grouped by type
+├── manifest.json                  # Metadata about the ZIP contents
+├── audio/
+│   ├── listening_q1.mp3
+│   ├── listening_q2.mp3
+│   └── ...
+└── images/
+    └── (empty for listening)
+```
+
+---
+
+### 11.6 ZIP Download Flow (Recommended)
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                   ZIP DOWNLOAD FLOW                          │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  1. GET /download/zip/catalog                               │
+│     └── Show available ZIP packs with sizes to user         │
+│                                                             │
+│  2. User selects: "Download N3 Exams (42.92 MB)"            │
+│                                                             │
+│  3. GET /download/zip/exams/level/3                         │
+│     └── Download single ZIP file                            │
+│     └── Show download progress bar                          │
+│                                                             │
+│  4. Extract ZIP to local storage                            │
+│     └── Use Flutter's archive package                       │
+│     └── Files extracted to app's documents directory        │
+│                                                             │
+│  5. Parse manifest.json                                     │
+│     └── Verify all files extracted correctly                │
+│                                                             │
+│  6. Load exams_n3.json into local database                  │
+│     └── Parse and store in SQLite/Hive                      │
+│                                                             │
+│  7. Use offline                                             │
+│     └── Audio: audio/filename.mp3                           │
+│     └── Image: images/filename.png                          │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### 11.7 Flutter Implementation Example
+
+```dart
+import 'package:archive/archive.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:http/http.dart' as http;
+import 'dart:io';
+
+class OfflineDownloadService {
+  final String baseUrl = 'https://your-server.com/api';
+
+  /// Download and extract ZIP for exam pack
+  Future<void> downloadExamPack(int level, Function(double) onProgress) async {
+    // 1. Get ZIP info first
+    final infoResponse = await http.get(
+      Uri.parse('$baseUrl/download/zip/exams/level/$level/info')
+    );
+    final info = jsonDecode(infoResponse.body);
+    final totalSize = info['estimatedSizeBytes'] as int;
+
+    // 2. Download ZIP file
+    final request = http.Request(
+      'GET',
+      Uri.parse('$baseUrl/download/zip/exams/level/$level')
+    );
+    final response = await http.Client().send(request);
+
+    // 3. Save to temporary file with progress tracking
+    final tempDir = await getTemporaryDirectory();
+    final zipFile = File('${tempDir.path}/exams_n$level.zip');
+    final sink = zipFile.openWrite();
+
+    int downloadedBytes = 0;
+    await for (final chunk in response.stream) {
+      sink.add(chunk);
+      downloadedBytes += chunk.length;
+      onProgress(downloadedBytes / totalSize);
+    }
+    await sink.close();
+
+    // 4. Extract ZIP
+    final bytes = await zipFile.readAsBytes();
+    final archive = ZipDecoder().decodeBytes(bytes);
+
+    final documentsDir = await getApplicationDocumentsDirectory();
+    final extractDir = Directory('${documentsDir.path}/offline/exams/n$level');
+    await extractDir.create(recursive: true);
+
+    for (final file in archive) {
+      final filename = file.name;
+      if (file.isFile) {
+        final outputFile = File('${extractDir.path}/$filename');
+        await outputFile.create(recursive: true);
+        await outputFile.writeAsBytes(file.content as List<int>);
+      } else {
+        await Directory('${extractDir.path}/$filename').create(recursive: true);
+      }
+    }
+
+    // 5. Clean up temp file
+    await zipFile.delete();
+
+    // 6. Parse JSON and save to local database
+    final jsonFile = File('${extractDir.path}/exams_n$level.json');
+    final examData = jsonDecode(await jsonFile.readAsString());
+    await localDatabase.saveExamData(level, examData);
+
+    print('Download complete! Files extracted to: ${extractDir.path}');
+  }
+
+  /// Load offline audio file
+  Future<File> getOfflineAudioFile(int level, String audioFileName) async {
+    final documentsDir = await getApplicationDocumentsDirectory();
+    return File('${documentsDir.path}/offline/exams/n$level/audio/$audioFileName');
+  }
+
+  /// Load offline image file
+  Future<File> getOfflineImageFile(int level, String imageFileName) async {
+    final documentsDir = await getApplicationDocumentsDirectory();
+    return File('${documentsDir.path}/offline/exams/n$level/images/$imageFileName');
+  }
+}
+```
+
+---
+
+### 11.8 ZIP vs Individual Files Comparison
+
+| Aspect | Individual Files | ZIP Download |
+|--------|------------------|--------------|
+| **Requests** | 1 (JSON) + N (media files) | 1 (ZIP) |
+| **Progress tracking** | Complex (many files) | Simple (single file) |
+| **Resume support** | Per-file | Per-ZIP |
+| **Total size** | Original | ~10-20% smaller |
+| **Complexity** | Higher | Lower |
+| **Error handling** | Per-file retry | Single retry |
+
+**Recommendation**: Use ZIP download for better user experience on mobile apps.
+
+---
+
+### 11.9 ZIP API Endpoints Summary
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /download/zip/catalog` | Danh sách gói ZIP với ước tính dung lượng |
+| `GET /download/zip/exams/level/{level}/info` | Thông tin ZIP đề thi (không download) |
+| `GET /download/zip/exams/level/{level}` | Download ZIP đề thi |
+| `GET /download/zip/questions/category/{cat}/info` | Thông tin ZIP câu hỏi (không download) |
+| `GET /download/zip/questions/category/{cat}` | Download ZIP câu hỏi |
 
 ---

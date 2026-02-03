@@ -1,8 +1,11 @@
 import 'dart:convert';
+import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/constants/api_constants.dart';
+import '../models/offline_data_models.dart';
+import 'offline_storage_service.dart';
 
 class PracticeQuestion {
   final int id;
@@ -89,9 +92,11 @@ class PracticeQuestionService {
   static const Duration _cacheExpiration = Duration(days: 30);
   final http.Client _client;
   final String? token;
+  final OfflineStorageService _offlineStorage;
 
-  PracticeQuestionService({http.Client? client, this.token})
-      : _client = client ?? http.Client() {
+  PracticeQuestionService({http.Client? client, this.token, OfflineStorageService? offlineStorage})
+      : _client = client ?? http.Client(),
+        _offlineStorage = offlineStorage ?? OfflineStorageService() {
     debugPrint('=== PracticeQuestionService Created ===');
     debugPrint('Token Status: ${token != null ? "✓ Authenticated (${token!.length} chars)" : "✗ NO TOKEN - User not authenticated"}');
     if (token == null) {
@@ -166,7 +171,14 @@ class PracticeQuestionService {
   }) async {
     try {
       if (!forceRefresh) {
-        // Try cache first
+        // Try offline data first
+        final offlineQuestions = await _getOfflineQuestions(level, category, typeId, limit);
+        if (offlineQuestions.isNotEmpty) {
+          debugPrint('Loaded ${offlineQuestions.length} questions from offline storage');
+          return offlineQuestions;
+        }
+
+        // Try cache next
         final cached = await _getCachedQuestions(level, category, typeId, limit);
         if (cached.isNotEmpty) {
           debugPrint('Loaded ${cached.length} questions from cache');
@@ -185,6 +197,14 @@ class PracticeQuestionService {
       );
     } catch (e) {
       debugPrint('Error getting questions: $e');
+      
+      // Try offline as fallback first
+      final offlineQuestions = await _getOfflineQuestions(level, category, typeId, limit);
+      if (offlineQuestions.isNotEmpty) {
+        debugPrint('Using offline questions as fallback');
+        return offlineQuestions;
+      }
+      
       // Try cache as fallback
       final cached = await _getCachedQuestions(level, category, typeId, limit);
       if (cached.isNotEmpty) {
@@ -192,6 +212,57 @@ class PracticeQuestionService {
         return cached;
       }
       rethrow;
+    }
+  }
+
+  /// Get questions from offline storage
+  Future<List<PracticeQuestion>> _getOfflineQuestions(
+    int level,
+    String category,
+    int typeId,
+    int limit,
+  ) async {
+    try {
+      final questionData = await _offlineStorage.getQuestionData(category, level);
+      if (questionData == null) return [];
+
+      // Find questions matching typeId
+      final List<PracticeQuestion> matchingQuestions = [];
+      for (final typeGroup in questionData.types) {
+        if (typeGroup.typeId == typeId) {
+          for (final q in typeGroup.questions) {
+            matchingQuestions.add(PracticeQuestion(
+              id: q.id,
+              question: q.question,
+              answers: q.answers,
+              audio: q.audio,
+              image: q.image,
+              txtRead: q.txtRead,
+              groupTitle: q.groupTitle,
+              category: category,
+              typeId: typeId,
+              typeName: typeGroup.typeName,
+              level: level,
+              correctAnswer: q.correctAnswer,
+              explain: q.explain,
+              explainEn: q.explainEn,
+              explainVn: q.explainVn,
+              explainCn: q.explainCn,
+            ));
+          }
+          break;
+        }
+      }
+
+      // Shuffle and limit
+      if (matchingQuestions.isNotEmpty) {
+        matchingQuestions.shuffle(Random());
+        return matchingQuestions.take(limit).toList();
+      }
+      return [];
+    } catch (e) {
+      debugPrint('Error getting offline questions: $e');
+      return [];
     }
   }
 

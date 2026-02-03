@@ -32,4 +32,11 @@ class ApiConstants {
   // Billing endpoints
   static const String billingPackages = '/billing/packages';
   static const String billingSubscription = '/billing/subscription';
+
+  // Download endpoints (offline data)
+  static const String downloadCatalog = '/download/catalog';
+  static const String downloadExamsByLevel = '/download/exams/level';
+  static const String downloadExamsMedia = '/download/exams/level/{level}/media';
+  static const String downloadQuestionsByCategory = '/download/questions/category';
+  static const String downloadQuestionsMedia = '/download/questions/category/{category}/media';
 }

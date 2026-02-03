@@ -50,6 +50,12 @@ dependencies:
   # Shared Preferences for persistent login
   shared_preferences: ^2.2.2
 
+  # Path provider for file storage
+  path_provider: ^2.1.2
+
+  # Archive for ZIP extraction
+  archive: ^3.6.1
+
   # HTML rendering for explanations
   flutter_html: ^3.0.0-beta.2
 

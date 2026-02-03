@@ -5,6 +5,8 @@ import 'package:http/http.dart' as http;
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/constants/api_constants.dart';
 import '../../data/services/exam_service.dart';
+import '../../data/services/offline_storage_service.dart';
+import '../../data/models/offline_data_models.dart';
 import 'exam_overview_screen.dart';
 import 'exam_result_screen.dart';
 
@@ -379,6 +381,19 @@ class _ExamQuestionScreenState extends State<ExamQuestionScreen> {
 
   Future<void> _loadExamDetails() async {
     try {
+      // Try to load from offline storage first
+      final offlineExamDetail = await _loadOfflineExamDetails();
+      if (offlineExamDetail != null) {
+        setState(() {
+          _examDetail = offlineExamDetail;
+          _questions = _examDetail!.getAllQuestions();
+          _isLoading = false;
+        });
+        _startTimer();
+        return;
+      }
+
+      // Fall back to API
       final response = await http.get(
         Uri.parse('${ApiConstants.baseUrl}/exams/${widget.exam.id}'),
         headers: {
@@ -402,11 +417,87 @@ class _ExamQuestionScreenState extends State<ExamQuestionScreen> {
         });
       }
     } catch (e) {
+      // Try offline as fallback on error
+      final offlineExamDetail = await _loadOfflineExamDetails();
+      if (offlineExamDetail != null) {
+        setState(() {
+          _examDetail = offlineExamDetail;
+          _questions = _examDetail!.getAllQuestions();
+          _isLoading = false;
+        });
+        _startTimer();
+        return;
+      }
+      
       setState(() {
         _error = 'Error: $e';
         _isLoading = false;
       });
     }
+  }
+
+  /// Load exam from offline storage
+  Future<ExamDetailModel?> _loadOfflineExamDetails() async {
+    try {
+      final offlineStorage = OfflineStorageService();
+      final examData = await offlineStorage.getExamData(widget.exam.level);
+      
+      if (examData == null) return null;
+      
+      // Find the specific exam
+      final offlineExam = examData.exams.firstWhere(
+        (e) => e.id == widget.exam.id,
+        orElse: () => throw Exception('Exam not found in offline data'),
+      );
+      
+      // Convert offline exam to ExamDetailModel
+      return _convertOfflineExamToDetail(offlineExam, examData.level);
+    } catch (e) {
+      debugPrint('Error loading offline exam: $e');
+      return null;
+    }
+  }
+
+  /// Convert OfflineExam to ExamDetailModel
+  ExamDetailModel _convertOfflineExamToDetail(OfflineExam offlineExam, int level) {
+    return ExamDetailModel(
+      id: offlineExam.id,
+      title: offlineExam.title,
+      level: level,
+      time: offlineExam.time,
+      score: offlineExam.score,
+      passScore: offlineExam.passScore,
+      parts: offlineExam.parts.map((part) => PartModel(
+        id: part.id,
+        name: part.name,
+        time: part.time,
+        minScore: part.minScore,
+        maxScore: part.maxScore,
+        sections: part.sections.map((section) => SectionModel(
+          id: section.id,
+          kind: section.kind,
+          questionGroups: section.questionGroups.map((group) => QuestionGroupModel(
+            id: group.id,
+            countQuestion: group.questions.length,
+            title: group.title ?? '',
+            audio: group.audio,
+            image: group.image,
+            txtRead: group.txtRead,
+            questions: group.questions.map((q) => QuestionModel(
+              id: q.id,
+              question: q.question,
+              answer1: q.answers.isNotEmpty ? q.answers[0] : '',
+              answer2: q.answers.length > 1 ? q.answers[1] : '',
+              answer3: q.answers.length > 2 ? q.answers[2] : '',
+              answer4: q.answers.length > 3 ? q.answers[3] : '',
+              correctAnswer: q.correctAnswer + 1, // Convert 0-based to 1-based
+              image: q.image,
+              explain: q.explain,
+            )).toList(),
+          )).toList(),
+        )).toList(),
+      )).toList(),
+    );
   }
 
   void _selectAnswer(int answerId) {
