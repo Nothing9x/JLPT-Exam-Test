@@ -62,31 +62,31 @@ class _HomeScreenState extends State<HomeScreen> {
         },
         type: BottomNavigationBarType.fixed,
         backgroundColor: isDark ? AppColors.cardBackgroundDark : Colors.white,
-        selectedItemColor: AppColors.tealAccent,
+        selectedItemColor: AppColors.primary,
         unselectedItemColor: isDark
             ? AppColors.textSecondaryDark
             : AppColors.textSecondaryLight,
         elevation: 8,
         items: const [
           BottomNavigationBarItem(
-            icon: Icon(Icons.school_outlined),
-            activeIcon: Icon(Icons.school),
-            label: 'Practice',
+            icon: Icon(Icons.home_outlined),
+            activeIcon: Icon(Icons.home),
+            label: 'Home',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.assignment_outlined),
-            activeIcon: Icon(Icons.assignment),
-            label: 'Exams',
+            icon: Icon(Icons.edit_document),
+            activeIcon: Icon(Icons.edit_document),
+            label: 'Exam',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.star_outline),
-            activeIcon: Icon(Icons.star),
-            label: 'Upgrade',
+            icon: Icon(Icons.workspace_premium_outlined),
+            activeIcon: Icon(Icons.workspace_premium),
+            label: 'Premium',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.settings_outlined),
             activeIcon: Icon(Icons.settings),
-            label: 'Settings',
+            label: 'Setting',
           ),
         ],
       ),

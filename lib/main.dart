@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'core/theme/app_theme.dart';
 import 'core/services/token_storage.dart';
+import 'core/services/theme_notifier.dart';
+import 'core/services/notification_service.dart';
 import 'features/language_selection/presentation/screens/language_selection_screen.dart';
 import 'features/home/presentation/screens/home_screen.dart';
 
@@ -14,11 +16,38 @@ void main() async {
     ),
   );
 
+  // Initialize services
+  await ThemeNotifier().initialize();
+  await NotificationService().initialize();
+
   runApp(const JLPTExamTestApp());
 }
 
-class JLPTExamTestApp extends StatelessWidget {
+class JLPTExamTestApp extends StatefulWidget {
   const JLPTExamTestApp({super.key});
+
+  @override
+  State<JLPTExamTestApp> createState() => _JLPTExamTestAppState();
+}
+
+class _JLPTExamTestAppState extends State<JLPTExamTestApp> {
+  final ThemeNotifier _themeNotifier = ThemeNotifier();
+
+  @override
+  void initState() {
+    super.initState();
+    _themeNotifier.addListener(_onThemeChanged);
+  }
+
+  @override
+  void dispose() {
+    _themeNotifier.removeListener(_onThemeChanged);
+    super.dispose();
+  }
+
+  void _onThemeChanged() {
+    setState(() {});
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +56,7 @@ class JLPTExamTestApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.system,
+      themeMode: _themeNotifier.themeMode,
       home: const _InitialScreen(),
     );
   }

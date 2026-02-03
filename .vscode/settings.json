@@ -1,0 +1,8 @@
+{
+    "chat.tools.terminal.autoApprove": {
+        "/^cp /home/toinx/WORKSPACE/PROJECTS/JLPT-Exam-Test/lib/features/home/presentation/tabs/practice_tab\\.dart /home/toinx/WORKSPACE/PROJECTS/JLPT-Exam-Test/lib/features/home/presentation/tabs/practice_tab\\.dart\\.bak$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    }
+}

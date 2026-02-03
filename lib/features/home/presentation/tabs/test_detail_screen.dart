@@ -63,6 +63,18 @@ class _TestDetailScreenState extends State<TestDetailScreen> {
     } else if (widget.category == 'NAT') {
       // NAT: Only NAT Test (2)
       examType = 2;
+    } else if (widget.category == 'OFFICIAL') {
+      // Official Exam (4) - Used for Practice Test feature
+      switch (_selectedTabIndex) {
+        case 0:
+          examType = 4; // Official Exam
+          break;
+        case 1:
+          examType = 5; // Official Skill Exam
+          break;
+        default:
+          examType = 4;
+      }
     } else {
       // JFT or other categories
       examType = 0;
@@ -217,6 +229,34 @@ class _TestDetailScreenState extends State<TestDetailScreen> {
                             fontWeight: FontWeight.w600,
                             color: AppColors.tealAccent,
                           ),
+                        ),
+                      )
+                    else if (widget.category == 'OFFICIAL')
+                      // Official has two types: Official Exam (4) and Official Skill Exam (5)
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            _buildTestTypeTab(
+                              label: 'Official Exam',
+                              isActive: _selectedTabIndex == 0,
+                              isDark: isDark,
+                              onTap: () => setState(() {
+                                _selectedTabIndex = 0;
+                                _dataFuture = _loadData();
+                              }),
+                            ),
+                            const SizedBox(width: 24),
+                            _buildTestTypeTab(
+                              label: 'Skill Exam',
+                              isActive: _selectedTabIndex == 1,
+                              isDark: isDark,
+                              onTap: () => setState(() {
+                                _selectedTabIndex = 1;
+                                _dataFuture = _loadData();
+                              }),
+                            ),
+                          ],
                         ),
                       ),
                   ],
