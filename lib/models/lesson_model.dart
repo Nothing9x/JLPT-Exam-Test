@@ -16,3 +16,4 @@ class LessonModel<T> {
   /// Get the count of items in this lesson
   int get itemCount => items.length;
 }
+

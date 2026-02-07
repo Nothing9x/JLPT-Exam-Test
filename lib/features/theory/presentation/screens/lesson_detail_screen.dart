@@ -6,6 +6,7 @@ import '../../../../models/vocabulary_model.dart';
 import '../../../../models/kanji_model.dart';
 import '../../../../models/grammar_model.dart';
 import '../../../../models/lesson_model.dart';
+import 'match_definition_screen.dart';
 
 /// Enum for lesson type
 enum LessonType { kanji, vocabulary, grammar }
@@ -279,7 +280,15 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
                   label: 'Definition',
                   isDark: isDark,
                   onTap: () {
-                    // TODO: Open definition mode
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => MatchDefinitionScreen(
+                          type: widget.type,
+                          levelTitle: widget.levelTitle,
+                          items: widget.items,
+                        ),
+                      ),
+                    );
                   },
                 ),
               ),
