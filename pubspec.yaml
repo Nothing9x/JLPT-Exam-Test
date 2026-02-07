@@ -62,11 +62,17 @@ dependencies:
   # Audio player for listening questions
   audioplayers: ^6.0.0
 
+  # Text-to-speech for vocabulary pronunciation
+  flutter_tts: ^4.0.2
+
   # Local notifications for study reminders
   flutter_local_notifications: ^18.0.1
 
   # Timezone for scheduling notifications
   timezone: ^0.10.0
+
+  # SQLite database
+  sqflite: ^2.3.2
 
 dev_dependencies:
   flutter_test:
@@ -93,6 +99,7 @@ flutter:
   # Assets
   assets:
     - assets/external_exam_catalog.json
+    - assets/db/
 
   # To add assets to your application, add an assets section, like this:
   # assets:

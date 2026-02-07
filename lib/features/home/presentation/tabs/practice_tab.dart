@@ -6,6 +6,7 @@ import '../screens/vocabulary_practice_screen.dart';
 import '../screens/grammar_practice_screen.dart';
 import '../screens/reading_practice_screen.dart';
 import '../screens/listening_practice_screen.dart';
+import '../../../theory/presentation/screens/theory_screen.dart';
 import 'test_detail_screen.dart';
 
 class PracticeTab extends StatefulWidget {
@@ -386,6 +387,20 @@ class _PracticeTabState extends State<PracticeTab> {
     );
   }
 
+  void _navigateToTheory(String levelId) {
+    final levelTitle = levelId.toUpperCase().replaceFirst('N', 'N');
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => TheoryScreen(
+          languageCode: widget.languageCode,
+          levelId: levelId,
+          levelTitle: levelTitle,
+        ),
+      ),
+    );
+  }
+
   Widget _buildPracticeItem(
     BuildContext context, {
     required IconData icon,
@@ -507,9 +522,7 @@ class _PracticeTabState extends State<PracticeTab> {
                 isDark: isDark,
                 badge: 'Free',
                 badgeColor: AppColors.accentGreen,
-                onTap: () {
-                  // TODO: Navigate to theory
-                },
+                onTap: () => _navigateToTheory('n$_userLevel'),
               ),
             ),
             const SizedBox(width: 12),
